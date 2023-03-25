@@ -31,6 +31,12 @@ LIBSSL_LDFLAGS := $(shell pkg-config --libs openssl)
 CFLAGS += $(LIBSSL_CFLAGS)
 LDFLAGS += $(LIBSSL_LDFLAGS)
 
+# Cornflakes Mlx5 Networking
+CORNFLAKES_PATH := /data/users/sravi2/cornflakes
+CORNFLAKES_CFLAGS := -I $(CORNFLAKES_PATH)/mlx5-datapath-c
+CORNFLAKES_LDFLAGS := -L $(CORNFLAKES_PATH)/target/release
+CFLAGS += $(CORNFLAKES_CFLAGS)
+LDFLAGS += $(CORNFLAKES_LDFLAGS)
 
 # Google test framework. This doesn't use pkgconfig
 GTEST_DIR := /usr/src/gtest

@@ -236,7 +236,7 @@ main(int argc, char **argv)
         }
 
         default:
-            fprintf(stderr, "Unknown argument %s\n", argv[optind]);
+            fprintf(stderr, "Unknown argument %s\n", argv[optind-2]);
         }
     }
 
@@ -291,6 +291,7 @@ main(int argc, char **argv)
         in.close();
     }
 
+    fprintf(stdout, "Completed setup. Running server ...\n");
     transport.Run();
 
     return 0;
