@@ -35,7 +35,7 @@
 #include "lib/assert.h"
 #include "lib/message.h"
 #include "lib/configuration.h"
-#include "lib/cftransport.h"
+#include "lib/udptransport.h"
 #include "replication/ir/client.h"
 #include "store/common/timestamp.h"
 #include "store/common/truetime.h"
@@ -82,7 +82,7 @@ private:
     std::set<int> participants;
 
     // Transport used by IR client proxies.
-    CFTransport transport;
+    UDPTransport transport;
     
     // Thread running the transport event loop.
     std::thread *clientTransport;

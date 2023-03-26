@@ -16,6 +16,7 @@
 #include "lib/message.h"
 #include "lib/persistent_register.h"
 #include "lib/udptransport.h"
+#include "lib/cftransport.h"
 #include "replication/common/quorumset.h"
 #include "replication/common/replica.h"
 #include "replication/ir/ir-proto.pb.h"
