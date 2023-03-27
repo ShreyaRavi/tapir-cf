@@ -11,6 +11,8 @@ store/tapirstore/server
 store/weakstore/server
 timeserver/timeserver
 
+store/tools/keys
+
 lib/tests/configuration-test
 lib/tests/simtransport-test
 lockserver/tests/lockserver-test
