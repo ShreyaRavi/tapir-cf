@@ -185,6 +185,7 @@ UDPTransport::UDPTransport(double dropRate, double reorderRate,
 
     lastTimerId = 0;
     lastFragMsgId = 0;
+    lastMsgId = 0;
 
     uniformDist = std::uniform_real_distribution<double>(0.0,1.0);
     randomEngine.seed(time(NULL));
@@ -382,19 +383,22 @@ UDPTransport::Register(TransportReceiver *receiver,
 
 static size_t
 SerializeMessage(const ::google::protobuf::Message &m,
-                 std::unique_ptr<char[]> *out)
+                 const size_t msgId,
+		 std::unique_ptr<char[]> *out)
 {
     string data = m.SerializeAsString();
     string type = m.GetTypeName();
     size_t typeLen = type.length();
     size_t dataLen = data.length();
-    ssize_t totalLen = (typeLen + sizeof(typeLen) +
+    ssize_t totalLen = (sizeof(msgId) + typeLen + sizeof(typeLen) +
                        dataLen + sizeof(dataLen));
 
     std::unique_ptr<char[]> unique_buf(new char[totalLen]);
     char *buf = unique_buf.get();
 
     char *ptr = buf;
+    *((size_t *) ptr) = msgId;
+    ptr += sizeof(size_t);
     *((size_t *) ptr) = typeLen;
     ptr += sizeof(size_t);
     ASSERT(ptr-buf < totalLen);
@@ -422,7 +426,8 @@ UDPTransport::SendMessageInternal(TransportReceiver *src,
 
     // Serialize message
     std::unique_ptr<char[]> unique_buf;
-    size_t msgLen = SerializeMessage(m, &unique_buf);
+    size_t msgId = ++lastMsgId;
+    size_t msgLen = SerializeMessage(m, msgId, &unique_buf);
     char *buf = unique_buf.get();
 
     int fd = fds[src];
@@ -486,12 +491,16 @@ static void
 DecodePacket(const char *buf, size_t sz, string &type, string &msg)
 {
     const char *ptr = buf;
+    size_t msgId = *((size_t *)ptr);
+    ptr += sizeof(size_t);
+
     size_t typeLen = *((size_t *)ptr);
     ptr += sizeof(size_t);
 
     ASSERT(ptr-buf < (int)sz);
     ASSERT(ptr+typeLen-buf < (int)sz);
 
+    printf("type is a string with typeLen: %zu.\n", typeLen);
     type = string(ptr, typeLen);
     ptr += typeLen;
 
@@ -501,6 +510,7 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg)
     ASSERT(ptr-buf < (int)sz);
     ASSERT(ptr+msgLen-buf <= (int)sz);
 
+    printf("msg is a string with msgId: %zu\tmsgLen: %zu.\n", msgId, msgLen);
     msg = string(ptr, msgLen);
     ptr += msgLen;
     

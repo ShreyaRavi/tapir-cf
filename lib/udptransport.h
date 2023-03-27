@@ -110,6 +110,7 @@ private:
     std::map<int, const transport::Configuration *> multicastConfigs;
     int lastTimerId;
     std::map<int, UDPTransportTimerInfo *> timers;
+    size_t lastMsgId;
     uint64_t lastFragMsgId;
     struct UDPTransportFragInfo
     {
