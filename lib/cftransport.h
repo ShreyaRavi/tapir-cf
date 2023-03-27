@@ -51,8 +51,9 @@ class CFTransportAddress : public TransportAddress
 public:
     CFTransportAddress * clone() const;
 private:
-    CFTransportAddress(const sockaddr_in &addr);
-    sockaddr_in addr;
+    CFTransportAddress(const uintptr_t conn_id, const uint32_t msg_id);
+    uintptr_t conn_id;
+    uint32_t msg_id;
     friend class CFTransport;
     friend bool operator==(const CFTransportAddress &a,
                            const CFTransportAddress &b);
@@ -66,7 +67,7 @@ class CFTransport : public TransportCommon<CFTransportAddress>
 {
 public:
     CFTransport(double dropRate = 0.0, double reorderRate = 0.0,
-                    int dscp = 0, bool handleSignals = true);
+                    int dscp = 0);
     virtual ~CFTransport();
     void Register(TransportReceiver *receiver,
                   const transport::Configuration &config,
@@ -78,37 +79,15 @@ public:
     void CancelAllTimers();
     
 private:
-    std::mutex mtx;
+    void* connection;
+    bool stopLoop;
 
     double dropRate;
     double reorderRate;
-    std::uniform_real_distribution<double> uniformDist;
-    std::default_random_engine randomEngine;
-    struct
-    {
-        bool valid;
-        CFTransportAddress *addr;
-        string msgType;
-        string message;
-        int fd;
-    } reorderBuffer;
     int dscp;
 
-    event_base *libeventBase;
-    std::vector<event *> listenerEvents;
-    std::vector<event *> signalEvents;
-    std::map<int, TransportReceiver*> receivers; // fd -> receiver
-    std::map<TransportReceiver*, int> fds; // receiver -> fd
-    std::map<const transport::Configuration *, int> multicastFds;
-    std::map<int, const transport::Configuration *> multicastConfigs;
-    uint64_t lastFragMsgId;
-    struct CFTransportFragInfo
-    {
-        uint64_t msgId;
-        string data;
-    };
-    std::map<CFTransportAddress, CFTransportFragInfo> fragInfo;
-
+    TransportReceiver* receiver;
+    
     bool SendMessageInternal(TransportReceiver *src,
                              const CFTransportAddress &dst,
                              const Message &m, bool multicast = false);
@@ -118,16 +97,8 @@ private:
     LookupAddress(const transport::Configuration &cfg,
                   int replicaIdx);
     const CFTransportAddress *
-    LookupMulticastAddress(const transport::Configuration *cfg);
-    void ListenOnMulticastPort(const transport::Configuration
-                               *canonicalConfig);
-    void OnReadable(int fd);
-    static void SocketCallback(evutil_socket_t fd,
-                               short what, void *arg);
-    static void LogCallback(int severity, const char *msg);
-    static void FatalCallback(int err);
-    static void SignalCallback(evutil_socket_t fd,
-                               short what, void *arg);
+    LookupMulticastAddress(const transport::Configuration*config) { return NULL; };
 };
 
 #endif  // _LIB_CFTRANSPORT_H_
+

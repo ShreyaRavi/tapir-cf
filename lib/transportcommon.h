@@ -70,7 +70,8 @@ public:
     SendMessageToReplica(TransportReceiver *src, int replicaIdx,
                          const Message &m)
     {
-        const transport::Configuration *cfg = configurations[src];
+        printf("inside SendMessageToReplica\n");
+	const transport::Configuration *cfg = configurations[src];
         ASSERT(cfg != NULL);
 
         if (!replicaAddressesInitialized) {
@@ -86,7 +87,8 @@ public:
     virtual bool
     SendMessageToAll(TransportReceiver *src, const Message &m)
     {
-        const transport::Configuration *cfg = configurations[src];
+        printf("inside SendMessageToAll\n");
+	const transport::Configuration *cfg = configurations[src];
         ASSERT(cfg != NULL);
 
         if (!replicaAddressesInitialized) {
@@ -170,7 +172,8 @@ protected:
     virtual void
     LookupAddresses()
     {
-        // Clear any existing list of addresses
+        printf("inside LookupAddresses\n");
+	// Clear any existing list of addresses
         replicaAddresses.clear();
         multicastAddresses.clear();
 

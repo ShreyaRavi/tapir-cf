@@ -47,6 +47,7 @@ TransportReceiver::SetAddress(const TransportAddress *addr)
 const TransportAddress &
 TransportReceiver::GetAddress()
 {
+    printf("inside TransportReceiver::GetAddress()\n");
     return *(this->myAddress);
 }
 

@@ -10,7 +10,7 @@ EXPAND = lib/tmpl/expand
 CFLAGS := -g -Wall -pthread -iquote.obj/gen -Wno-uninitialized -O2 -DNASSERT
 #CFLAGS := -g -Wall -pthread -iquote.obj/gen -Wno-uninitialized 
 CXXFLAGS := -g -std=c++0x
-LDFLAGS := -levent_pthreads
+LDFLAGS := -L /data/users/sravi2/cornflakes/target/release -levent_pthreads
 ## Debian package: check
 #CHECK_CFLAGS := $(shell pkg-config --cflags check)
 #CHECK_LDFLAGS := $(shell pkg-config --cflags --libs check)
@@ -32,12 +32,14 @@ CFLAGS += $(LIBSSL_CFLAGS)
 LDFLAGS += $(LIBSSL_LDFLAGS)
 
 # Cornflakes Mlx5 Networking
-CORNFLAKES_PATH := /data/users/sravi2/cornflakes
-CORNFLAKES_CFLAGS := -I $(CORNFLAKES_PATH)/mlx5-datapath-c
-CORNFLAKES_LDFLAGS := -L $(CORNFLAKES_PATH)/target/release
-CFLAGS += $(CORNFLAKES_CFLAGS)
-LDFLAGS += $(CORNFLAKES_LDFLAGS)
-
+#CORNFLAKES_PATH := /data/users/sravi2/cornflakes
+#CORNFLAKES_CFLAGS := -I $(CORNFLAKES_PATH)/mlx5-datapath-c
+#CORNFLAKES_LDFLAGS := -L$(CORNFLAKES_PATH)/target/release
+#CFLAGS += $(CORNFLAKES_CFLAGS)
+#CFLAGS += $(CORNFLAKES_LDFLAGS)
+#LDFLAGS += $(CORNFLAKES_LDFLAGS)
+LIBS = -lmlx5_datapath_c
+#LDFLAGS += -lmlx5_datapath_c
 # Google test framework. This doesn't use pkgconfig
 GTEST_DIR := /usr/src/gtest
 
@@ -171,16 +173,16 @@ define compile
 	@mkdir -p $(dir $@)
 	$(call trace,$(1),$<,\
 	  $(CC) -iquote. $(CFLAGS) $(CFLAGS-$<) $(2) $(DEPFLAGS) -E $<)
-	$(Q)$(CC) -iquote. $(CFLAGS) $(CFLAGS-$<) $(2) -E -o .obj/$*.t $<
-	$(Q)$(EXPAND) $(EXPANDARGS) -o .obj/$*.i .obj/$*.t
-	$(Q)$(CC) $(CFLAGS) $(CFLAGS-$<) $(2) -c -o $@ .obj/$*.i
+	$(Q)$(CC) -iquote. $(CFLAGS) $(CFLAGS-$<) $(2) -E -o .obj/$*.t $< $(LIBS)
+	$(Q)$(EXPAND) $(EXPANDARGS) -o .obj/$*.i .obj/$*.t $(LIBS)
+	$(Q)$(CC) $(CFLAGS) $(CFLAGS-$<) $(2) -c -o $@ .obj/$*.i $(LIBS)
 endef
 
 define compilecxx
 	@mkdir -p $(dir $@)
 	$(call trace,$(1),$<,\
-	  $(CXX) -iquote. $(CFLAGS) $(CXXFLAGS) $(CFLAGS-$<) $(2) $(DEPFLAGS) -E $<)
-	$(Q)$(CXX) -iquote. $(CFLAGS) $(CXXFLAGS) $(CFLAGS-$<) $(2) -c -o $@ $<
+	  $(CXX) -iquote. $(CFLAGS) $(CXXFLAGS) $(CFLAGS-$<) $(2) $(DEPFLAGS) -E $<) $(LIBS)
+	$(Q)$(CXX) -iquote. $(CFLAGS) $(CXXFLAGS) $(CFLAGS-$<) $(2) -c -o $@ $< $(LIBS)
 endef
 
 # All object files come in two flavors: regular and
@@ -209,7 +211,7 @@ $(PROTOOBJS:%.o=%-pic.o): .obj/%-pic.o: .obj/gen/%.pb.cc $(PROTOSRCS)
 $(call add-LDFLAGS,$(TEST_BINS),$(CHECK_LDFLAGS))
 
 $(BINS) $(TEST_BINS): %:
-	$(call trace,LD,$@,$(LD) -o $@ $^ $(LDFLAGS) $(LDFLAGS-$@))
+	$(call trace,LD,$@,$(LD) -o $@ $^ $(LDFLAGS) $(LDFLAGS-$@) $(LIBS))
 
 #
 # Automatic dependencies
