@@ -51,7 +51,7 @@
 #include <signal.h>
 #include <stdlib.h>
 
-#include "mlx5_datapath.h"
+#include "mlx5_datapath_cpp.h"
 
 using std::pair;
 
@@ -193,6 +193,7 @@ CFTransport::SendMessageInternal(TransportReceiver *src,
 
     // Serialize message
     std::unique_ptr<char[]> unique_buf;
+    printf("try to serialize message.\n");
     size_t msgLen = SerializeMessage(m, &unique_buf);
     char *buf = unique_buf.get(); 
 
@@ -206,7 +207,8 @@ CFTransport::SendMessageInternal(TransportReceiver *src,
 
 static void
 DecodePacket(const char *buf, size_t sz, string &type, string &msg)
-{
+{    
+    printf("size_t size: %ld\n", sizeof(size_t));
     const char *ptr = buf;
     size_t typeLen = *((size_t *)ptr);
     ptr += sizeof(size_t);
@@ -214,6 +216,7 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg)
     ASSERT(ptr-buf < (int)sz);
     ASSERT(ptr+typeLen-buf < (int)sz);
 
+    printf("type is a string with typeLen: %zu.\n", typeLen);
     type = string(ptr, typeLen);
     ptr += typeLen;
 
@@ -223,6 +226,7 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg)
     ASSERT(ptr-buf < (int)sz);
     ASSERT(ptr+msgLen-buf <= (int)sz);
 
+    printf("msg is a string with msgLen: %zu.\n", msgLen);
     msg = string(ptr, msgLen);
     ptr += msgLen;
 }
@@ -232,11 +236,29 @@ CFTransport::Run()
 {
     while (!stopLoop) {
         size_t n = 0;
-        ReceivedPkt* pkts = Mlx5Connection_pop(connection, &n);
+        void** pkts = Mlx5Connection_pop_raw_packets(connection, &n);
         // if n = 0, continue
         for (size_t i = 0; i < n; i++) {
             string msgType, msg;
-            DecodePacket((char*)pkts[i].data, pkts[i].data_len, msgType, msg);
+	    uint32_t msg_id = Mlx5Connection_RxPacket_msg_id(pkts[i]);
+	    uintptr_t conn_id = Mlx5Connection_RxPacket_conn_id(pkts[i]);
+	    uintptr_t data_len = Mlx5Connection_RxPacket_data_len(pkts[i]);
+	    const unsigned char* data = Mlx5Connection_RxPacket_data(pkts[i]);
+	    printf("rx pkt msg id: %u\n", msg_id);
+	    printf("try to deserialize message of len: %zu.\n", data_len);
+            int msgLen = static_cast<int>(data_len);
+	    printf("msgLen as an int: %d\n", msgLen);
+	    for (int j = 0; j < msgLen; j++) {
+	        printf("%u ", data[j]);
+	    }
+	    printf("\n");
+
+	    printf("bytes after unsigned -> signed char cast\n");
+	    for (int j = 0; j < msgLen; j++) {
+	        printf("%c ", (char)data[j]);
+	    }
+	    printf("\n");
+	    DecodePacket((const char*)data, data_len, msgType, msg);
             // we should pass in the conn id ptr so that the sendMessage() function which sends replies
             // can know which conn id to send the reply on
 
@@ -256,8 +278,9 @@ CFTransport::Run()
             //    SendMessageToAll(), and SendMessageToReplica() are never called.   
 
             // 2. DONE. create an address with the conn id pointer and pass it in.
-            CFTransportAddress senderAddr(pkts[i].conn_id, pkts[i].msg_id);
+            CFTransportAddress senderAddr(conn_id, msg_id);
             receiver->ReceiveMessage(senderAddr, msgType, msg);
+	    Mlx5Connection_RxPacket_free(pkts[i]);
         }
 
     }
