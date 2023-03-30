@@ -66,8 +66,7 @@ private:
 class CFTransport : public TransportCommon<CFTransportAddress>
 {
 public:
-    CFTransport(double dropRate = 0.0, double reorderRate = 0.0,
-                    int dscp = 0);
+    CFTransport(void* mlx5Connection);
     virtual ~CFTransport();
     void Register(TransportReceiver *receiver,
                   const transport::Configuration &config,
@@ -81,10 +80,6 @@ public:
 private:
     void* connection;
     bool stopLoop;
-
-    double dropRate;
-    double reorderRate;
-    int dscp;
 
     TransportReceiver* receiver;
     

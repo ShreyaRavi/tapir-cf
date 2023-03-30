@@ -30,6 +30,7 @@
  **********************************************************************/
 
 #include "store/tapirstore/server.h"
+#include "mlx5_datapath_cpp.h"
 
 namespace tapirstore {
 
@@ -260,7 +261,14 @@ main(int argc, char **argv)
                 "only %d replicas defined\n", index, config.n);
     }
 
-    CFTransport transport(0.0, 0.0, 0);
+    const char *cf_config = getenv("CONFIG_PATH");
+    const char *server_ip = getenv("SERVER_IP");
+    // TODO config file
+    // TODO server ip
+    // construct new connection and store the pointer
+    void* connection = Mlx5Connection_new(cf_config, server_ip);
+
+    CFTransport transport(connection);
 
     tapirstore::Server server(linearizable);
 

@@ -99,9 +99,8 @@ CFTransport::LookupAddress(const transport::Configuration &config,
     return LookupAddress(addr);
 }
 
-CFTransport::CFTransport(double dropRate, double reorderRate,
-        int dscp)
-    : dropRate(dropRate), reorderRate(reorderRate), dscp(dscp)
+CFTransport::CFTransport(void* mlx5Connection)
+    : connection(mlx5Connection)
 {
     
 }
@@ -120,14 +119,6 @@ CFTransport::Register(TransportReceiver *receiver,
     // struct sockaddr_in sin;
     
     RegisterConfiguration(receiver, config, replicaIdx);
-
-    const char *cf_config = getenv("CONFIG_PATH");
-    const char *server_ip = getenv("SERVER_IP");
-    // TODO config file
-    // TODO server ip 
-    // construct new connection and store the pointer
-    connection = Mlx5Connection_new(cf_config, server_ip);
-
 
     // don't need to do SetAddress because it only sets an address
     // that is used when GetAddress is called.
