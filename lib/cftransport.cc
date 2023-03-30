@@ -149,22 +149,43 @@ SerializeMessage(const ::google::protobuf::Message &m,
 {
     string data = m.SerializeAsString();
     string type = m.GetTypeName();
-    size_t typeLen = type.length();
+    int msg_type = -1;
+    if (type == "replication.ir.proto.FinalizeInconsistentMessage") {
+        msg_type = FINALIZE_INCONSISTENT_MESSAGE;
+    } else if (type == "replication.ir.proto.ProposeInconsistentMessage") {
+        msg_type = PROPOSE_INCONSISTENT_MESSAGE;
+    } else if (type == "replication.ir.proto.FinalizeConsensusMessage") {
+        msg_type = FINALIZE_CONSENSUS_MESSAGE;
+    } else if (type == "replication.ir.proto.ProposeConsensusMessage") {
+        msg_type = PROPOSE_CONSENSUS_MESSAGE;
+    } else if (type == "replication.ir.proto.UnloggedRequestMessage") {
+        msg_type = UNLOGGED_REQUEST_MESSAGE;
+    } else if (type == "replication.ir.proto.ReplyInconsistentMessage") {
+        msg_type = REPLY_INCONSISTENT_MESSAGE;
+    } else if (type == "replication.ir.proto.ReplyConsensusMessage") {
+        msg_type = REPLY_CONSENSUS_MESSAGE;
+    } else if (type == "replication.ir.proto.ConfirmMessage") {
+        msg_type = CONFIRM_MESSAGE;
+    } else if (type == "replication.ir.proto.UnloggedReplyMessage") {
+        msg_type = UNLOGGED_REPLY_MESSAGE;
+    }
+
+    if (msg_type == -1) {
+        printf("type: %s\n", type.c_str());
+	Panic("Invalid message type");
+    }
+
+    // ignore type len and type. just write the enum and the data.
     size_t dataLen = data.length();
-    ssize_t totalLen = (typeLen + sizeof(typeLen) +
+    ssize_t totalLen = (sizeof(int) +
                        dataLen + sizeof(dataLen));
 
     std::unique_ptr<char[]> unique_buf(new char[totalLen]);
     char *buf = unique_buf.get();
 
-    // wire format: typeLength type dataLen data
     char *ptr = buf;
-    *((size_t *) ptr) = typeLen;
-    ptr += sizeof(size_t);
-    ASSERT(ptr-buf < totalLen);
-    ASSERT(ptr+typeLen-buf < totalLen);
-    memcpy(ptr, type.c_str(), typeLen);
-    ptr += typeLen;
+    *((int *) ptr) = msg_type;
+    ptr += sizeof(int);
     *((size_t *) ptr) = dataLen;
     ptr += sizeof(size_t);
     ASSERT(ptr-buf < totalLen);
@@ -207,18 +228,34 @@ CFTransport::SendMessageInternal(TransportReceiver *src,
 
 static void
 DecodePacket(const char *buf, size_t sz, string &type, string &msg)
-{    
-    printf("size_t size: %ld\n", sizeof(size_t));
+{   
+    // first sizeof(int) bytes represent the type which we can look up in the enum
+
     const char *ptr = buf;
-    size_t typeLen = *((size_t *)ptr);
-    ptr += sizeof(size_t);
-
-    ASSERT(ptr-buf < (int)sz);
-    ASSERT(ptr+typeLen-buf < (int)sz);
-
-    printf("type is a string with typeLen: %zu.\n", typeLen);
-    type = string(ptr, typeLen);
-    ptr += typeLen;
+    int msg_type = *((int *)ptr);
+    ptr += sizeof(int);
+    if (msg_type == FINALIZE_INCONSISTENT_MESSAGE) {
+        type = "replication.ir.proto.FinalizeInconsistentMessage";
+    } else if (msg_type == PROPOSE_INCONSISTENT_MESSAGE) {
+        type = "replication.ir.proto.ProposeInconsistentMessage";
+    } else if (msg_type == FINALIZE_CONSENSUS_MESSAGE) {
+        type = "replication.ir.proto.FinalizeConsensusMessage";
+    } else if (msg_type == PROPOSE_CONSENSUS_MESSAGE) {
+        type = "replication.ir.proto.ProposeConsensusMessage";
+    } else if (msg_type == UNLOGGED_REQUEST_MESSAGE) {
+        type = "replication.ir.proto.UnloggedRequestMessage";
+    } else if (msg_type == REPLY_INCONSISTENT_MESSAGE) {
+        type = "replication.ir.proto.ReplyInconsistentMessage";
+    } else if (msg_type == REPLY_CONSENSUS_MESSAGE) {
+        type = "replication.ir.proto.ReplyConsensusMessage";
+    } else if (msg_type == CONFIRM_MESSAGE){
+        type = "replication.ir.proto.ConfirmMessage";
+    } else if (msg_type == UNLOGGED_REPLY_MESSAGE) {
+        type = "replication.ir.proto.UnloggedReplyMessage";
+    } else {
+	printf("message type: %d\n", msg_type);
+        Panic("Decoding unknown message type.");
+    }
 
     size_t msgLen = *((size_t *)ptr);
     ptr += sizeof(size_t);
