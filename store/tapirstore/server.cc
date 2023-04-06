@@ -55,16 +55,16 @@ Server::ExecInconsistentUpcall(const string &str1)
     Request request;
 
     request.ParseFromString(str1);
-
-    switch (request.op()) {
-    case tapirstore::proto::Request::COMMIT:
+    Operation op = static_cast<Operation>(request.op());
+    switch (op) {
+    case COMMIT:
         store->Commit(request.txnid(), request.commit().timestamp());
         break;
-    case tapirstore::proto::Request::ABORT:
+    case ABORT:
         store->Abort(request.txnid(), Transaction(request.abort().txn()));
         break;
     default:
-        Panic("Unrecognized inconsisternt operation.");
+        Panic("Unrecognized inconsistent operation.");
     }
 }
 
@@ -79,9 +79,9 @@ Server::ExecConsensusUpcall(const string &str1, string &str2)
     Timestamp proposed;
 
     request.ParseFromString(str1);
-
-    switch (request.op()) {
-    case tapirstore::proto::Request::PREPARE:
+    Operation op = static_cast<Operation>(request.op());
+    switch (op) {
+    case PREPARE:
         status = store->Prepare(request.txnid(),
                                 Transaction(request.prepare().txn()),
                                 Timestamp(request.prepare().timestamp()),
@@ -108,9 +108,9 @@ Server::UnloggedUpcall(const string &str1, string &str2)
     int status;
 
     request.ParseFromString(str1);
-
-    switch (request.op()) {
-    case tapirstore::proto::Request::GET:
+    Operation op = static_cast<Operation>(request.op());
+    switch (op) {
+    case GET:
         if (request.get().has_timestamp()) {
             pair<Timestamp, string> val;
             status = store->Get(request.txnid(), request.get().key(),
@@ -304,3 +304,4 @@ main(int argc, char **argv)
 
     return 0;
 }
+

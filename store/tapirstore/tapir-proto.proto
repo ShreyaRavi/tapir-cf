@@ -23,13 +23,7 @@ message AbortMessage {
 }
 
 message Request {
-     enum Operation {
-          GET = 1;
-          PREPARE = 2;
-          COMMIT = 3;
-          ABORT = 4;
-     }	
-     required Operation op = 1;
+     required uint32 op = 1;
      required uint64 txnid = 2;
      optional GetMessage get = 3;
      optional PrepareMessage prepare = 4;

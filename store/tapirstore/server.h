@@ -71,8 +71,16 @@ public:
 
 private:
     TxnStore *store;
+
+    enum Operation {
+        GET = 1,
+        PREPARE = 2,
+        COMMIT = 3,
+        ABORT = 4
+    };
 };
 
 } // namespace tapirstore
 
 #endif /* _TAPIR_SERVER_H_ */
+

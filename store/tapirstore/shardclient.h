@@ -112,8 +112,16 @@ private:
     void FinishRequest(const std::string &reply_str);
     void FinishRequest();
     int SendGet(const std::string &request_str);
+
+    enum Operation {
+        GET = 1,
+        PREPARE = 2,
+        COMMIT = 3,
+        ABORT = 4
+    };
 };
 
 } // namespace tapirstore
 
 #endif /* _TAPIR_SHARDCLIENT_H_ */
+

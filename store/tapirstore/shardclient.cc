@@ -89,7 +89,7 @@ ShardClient::Get(uint64_t id, const string &key, Promise *promise)
     // create request
     string request_str;
     Request request;
-    request.set_op(Request::GET);
+    request.set_op(GET);
     request.set_txnid(id);
     request.mutable_get()->set_key(key);
     request.SerializeToString(&request_str);
@@ -121,7 +121,7 @@ ShardClient::Get(uint64_t id, const string &key,
     // create request
     string request_str;
     Request request;
-    request.set_op(Request::GET);
+    request.set_op(GET);
     request.set_txnid(id);
     request.mutable_get()->set_key(key);
     timestamp.serialize(request.mutable_get()->mutable_timestamp());
@@ -162,7 +162,7 @@ ShardClient::Prepare(uint64_t id, const Transaction &txn,
     // create prepare request
     string request_str;
     Request request;
-    request.set_op(Request::PREPARE);
+    request.set_op(PREPARE);
     request.set_txnid(id);
     txn.serialize(request.mutable_prepare()->mutable_txn());
     timestamp.serialize(request.mutable_prepare()->mutable_timestamp());
@@ -228,7 +228,7 @@ ShardClient::Commit(uint64_t id, const Transaction &txn,
     // create commit request
     string request_str;
     Request request;
-    request.set_op(Request::COMMIT);
+    request.set_op(COMMIT);
     request.set_txnid(id);
     request.mutable_commit()->set_timestamp(timestamp);
     request.SerializeToString(&request_str);
@@ -252,7 +252,7 @@ ShardClient::Abort(uint64_t id, const Transaction &txn, Promise *promise)
     // create abort request
     string request_str;
     Request request;
-    request.set_op(Request::ABORT);
+    request.set_op(ABORT);
     request.set_txnid(id);
     txn.serialize(request.mutable_abort()->mutable_txn());
     request.SerializeToString(&request_str);
@@ -349,3 +349,4 @@ ShardClient::AbortCallback(const string &request_str, const string &reply_str)
 }
 
 } // namespace tapir
+
