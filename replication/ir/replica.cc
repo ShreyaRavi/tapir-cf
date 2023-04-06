@@ -142,7 +142,7 @@ IRReplica::HandleProposeInconsistent(const TransportAddress &remote,
         reply.set_replicaidx(myIdx);
         reply.mutable_opid()->set_clientid(clientid);
         reply.mutable_opid()->set_clientreqid(clientreqid);
-        reply.set_finalized(false);
+        reply.set_finalized(0);
     }
 
     // Send the reply
@@ -220,7 +220,7 @@ IRReplica::HandleProposeConsensus(const TransportAddress &remote,
         reply.mutable_opid()->set_clientid(clientid);
         reply.mutable_opid()->set_clientreqid(clientreqid);
         reply.set_result(result);
-        reply.set_finalized(false);
+        reply.set_finalized(0);
     }
 
     // Send the reply

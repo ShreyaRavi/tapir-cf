@@ -51,7 +51,7 @@ message ReplyInconsistentMessage {
     required uint64 view = 1;
     required uint32 replicaIdx = 2;
     required OpID opid = 3;
-    required bool finalized = 4;
+    required uint32 finalized = 4;
 }
 
 message FinalizeInconsistentMessage {
@@ -73,7 +73,7 @@ message ReplyConsensusMessage {
     required uint32 replicaIdx = 2;
     required OpID opid = 3;
     required bytes result = 4;
-    required bool finalized = 5;
+    required uint32 finalized = 5;
 }
 
 message FinalizeConsensusMessage {

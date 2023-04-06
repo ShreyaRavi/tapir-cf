@@ -450,13 +450,6 @@ UDPTransport::SendMessageInternal(TransportReceiver *src,
     uint32_t msgId = ++lastMsgId;
     size_t msgLen = SerializeMessage(m, msgId, &unique_buf);
     char *buf = unique_buf.get();
-    printf("serialized message is len: %zu.\n", msgLen);
-    int msgLenInt = static_cast<int>(msgLen);
-    printf("msgLen as an int: %d\n", msgLenInt);
-    for (int i = 0; i < msgLenInt; i++) {
-        printf("%d ", buf[i]);
-    }
-    printf("\n");
     int fd = fds[src];
 
     // XXX All of this assumes that the socket is going to be
@@ -518,7 +511,7 @@ static void
 DecodePacket(const char *buf, size_t sz, string &type, string &msg)
 {
     const char *ptr = buf;
-    uint32_t msgId = *((uint32_t *)ptr);
+    // ignore first 4 bytes: msg id
     ptr += sizeof(uint32_t);
 
     int msg_type = *((int *)ptr);
@@ -552,7 +545,6 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg)
     ASSERT(ptr-buf < (int)sz);
     ASSERT(ptr+msgLen-buf <= (int)sz);
 
-    printf("msg is a string with msgId: %u\tmsgLen: %zu.\n", msgId, msgLen);
     msg = string(ptr, msgLen);
     ptr += msgLen;
     
