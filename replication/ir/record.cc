@@ -46,8 +46,8 @@ Record::Record(const proto::RecordProto &record_proto) {
         request.set_op(entry_proto.op());
         request.set_clientid(entry_proto.opid().clientid());
         request.set_clientreqid(entry_proto.opid().clientreqid());
-        proto::RecordEntryState state = entry_proto.state();
-        proto::RecordEntryType type = entry_proto.type();
+        RecordEntryState state = static_cast<RecordEntryState>(entry_proto.state());
+        RecordEntryType type = static_cast<RecordEntryType>(entry_proto.record_type());
         const std::string& result = entry_proto.result();
         Add(view, opid, request, state, type, result);
     }
@@ -63,14 +63,14 @@ Record::Add(const RecordEntry& entry) {
 
 RecordEntry &
 Record::Add(view_t view, opid_t opid, const Request &request,
-            proto::RecordEntryState state, proto::RecordEntryType type)
+            RecordEntryState state, RecordEntryType type)
 {
     return Add(RecordEntry(view, opid, state, type, request, ""));
 }
 
 RecordEntry &
 Record::Add(view_t view, opid_t opid, const Request &request,
-            proto::RecordEntryState state, proto::RecordEntryType type,
+            RecordEntryState state, RecordEntryType type,
             const string &result)
 {
     RecordEntry &entry = Add(view, opid, request, state, type);
@@ -93,7 +93,7 @@ Record::Find(opid_t opid)
 
 
 bool
-Record::SetStatus(opid_t op, proto::RecordEntryState state)
+Record::SetStatus(opid_t op, RecordEntryState state)
 {
     RecordEntry *entry = Find(op);
     if (entry == NULL) {
@@ -151,7 +151,7 @@ Record::ToProto(proto::RecordProto *proto) const
         entry_proto->mutable_opid()->set_clientid(entry.opid.first);
         entry_proto->mutable_opid()->set_clientreqid(entry.opid.second);
         entry_proto->set_state(entry.state);
-        entry_proto->set_type(entry.type);
+        entry_proto->set_record_type(entry.type);
         entry_proto->set_op(entry.request.op());
         entry_proto->set_result(entry.result);
     }
@@ -163,3 +163,4 @@ const std::map<opid_t, RecordEntry> &Record::Entries() const {
 
 } // namespace ir
 } // namespace replication
+

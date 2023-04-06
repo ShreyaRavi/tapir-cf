@@ -47,12 +47,22 @@ namespace ir {
 
 typedef std::pair<uint64_t, uint64_t> opid_t;
 
+enum RecordEntryState {
+    RECORD_STATE_TENTATIVE = 0,
+    RECORD_STATE_FINALIZED = 1
+};
+
+enum RecordEntryType {
+    RECORD_TYPE_INCONSISTENT = 0,
+    RECORD_TYPE_CONSENSUS = 1
+};
+
 struct RecordEntry
 {
     view_t view;
     opid_t opid;
-    proto::RecordEntryState state;
-    proto::RecordEntryType type;
+    RecordEntryState state;
+    RecordEntryType type;
     Request request;
     std::string result;
 
@@ -64,8 +74,8 @@ struct RecordEntry
           type(x.type),
           request(x.request),
           result(x.result) {}
-    RecordEntry(view_t view, opid_t opid, proto::RecordEntryState state,
-                proto::RecordEntryType type, const Request &request,
+    RecordEntry(view_t view, opid_t opid, RecordEntryState state,
+                RecordEntryType type, const Request &request,
                 const std::string &result)
         : view(view),
           opid(opid),
@@ -98,13 +108,13 @@ public:
 
     RecordEntry &Add(const RecordEntry& entry);
     RecordEntry &Add(view_t view, opid_t opid, const Request &request,
-                     proto::RecordEntryState state,
-                     proto::RecordEntryType type);
+                     RecordEntryState state,
+                     RecordEntryType type);
     RecordEntry &Add(view_t view, opid_t opid, const Request &request,
-                     proto::RecordEntryState state, proto::RecordEntryType type,
+                     RecordEntryState state, RecordEntryType type,
                      const std::string &result);
     RecordEntry *Find(opid_t opid);
-    bool SetStatus(opid_t opid, proto::RecordEntryState state);
+    bool SetStatus(opid_t opid, RecordEntryState state);
     bool SetResult(opid_t opid, const std::string &result);
     bool SetRequest(opid_t opid, const Request &req);
     void Remove(opid_t opid);
@@ -119,3 +129,4 @@ private:
 }      // namespace ir
 }      // namespace replication
 #endif  /* _IR_RECORD_H_ */
+

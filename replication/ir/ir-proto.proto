@@ -18,21 +18,11 @@ message PersistedViewInfo {
   required uint64 latest_normal_view = 2;
 }
 
-enum RecordEntryState {
-    RECORD_STATE_TENTATIVE = 0;
-    RECORD_STATE_FINALIZED = 1;
-}
-
-enum RecordEntryType {
-    RECORD_TYPE_INCONSISTENT = 0;
-    RECORD_TYPE_CONSENSUS = 1;
-}
-
 message RecordEntryProto {
   required uint64 view = 1;
   required OpID opid = 2;
-  required RecordEntryState state = 3;
-  required RecordEntryType type = 4;
+  required uint32 state = 3;
+  required uint32 record_type = 4;
   required bytes op = 5;
   required bytes result = 6;
 }
