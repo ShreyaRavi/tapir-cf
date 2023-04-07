@@ -68,7 +68,7 @@ public:
 
     virtual bool
     SendCFMessage(TransportReceiver *src, const TransportAddress &dst,
-                const void* m, const SendCFMessageType type)
+                const void* m, const MessageType type)
     {
         const ADDR &dstAddr = dynamic_cast<const ADDR &>(dst);
         return SendCFMessageInternal(src, dstAddr, m, type, false);
@@ -93,7 +93,7 @@ public:
 
     virtual bool
     SendCFMessageToReplica(TransportReceiver *src, int replicaIdx,
-                         const void* m, const SendCFMessageType type)
+                         const void* m, const MessageType type)
     {
 	const transport::Configuration *cfg = configurations[src];
         ASSERT(cfg != NULL);
@@ -138,7 +138,7 @@ public:
     }
 
     virtual bool
-    SendCFMessageToAll(TransportReceiver *src, const void* m, const SendCFMessageType type)
+    SendCFMessageToAll(TransportReceiver *src, const void* m, const MessageType type)
     {
 	const transport::Configuration *cfg = configurations[src];
         ASSERT(cfg != NULL);
@@ -169,7 +169,7 @@ public:
     virtual bool SendCFMessageInternal(TransportReceiver *src,
                                      const ADDR &dst,
                                      const void* m,
-                                     const SendCFMessageType type,
+                                     const MessageType type,
                                      bool multicast = false) {
         Panic("Unimplemented SendCFMessageInternal");
         return false;

@@ -217,6 +217,30 @@ CFTransport::SendMessageInternal(TransportReceiver *src,
     return true;
 }
 
+bool
+CFTransport::SendCFMessageInternal(TransportReceiver *src,
+                                    const CFTransportAddress &dst,,
+                                    const void* m,
+                                    const MessageType type,
+                                    bool multicast = false)
+{
+    switch(type) {
+        case REPLY_INCONSISTENT_MESSAGE:
+            break;
+        case REPLY_CONSENSUS_MESSAGE:
+            break;
+        case CONFIRM_MESSAGE:
+            break;
+        case UNLOGGED_REPLY_MESSAGE:
+            break;
+        default:
+            Panic("Message type in SendCFMessageInternal is unexpected.");
+            return false;
+    }
+    printf("SendCFMessageInternal\n");
+    return true;
+}
+
 static void
 DecodePacket(const char *buf, size_t sz, string &type, string &msg)
 {   
