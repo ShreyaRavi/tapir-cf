@@ -33,12 +33,14 @@ LDFLAGS += $(LIBSSL_LDFLAGS)
 
 # Cornflakes Mlx5 Networking
 CORNFLAKES_PATH := /data/users/sravi2/cornflakes
-CORNFLAKES_CFLAGS := -I $(CORNFLAKES_PATH)/mlx5-datapath-c
+MLX5_CFLAGS := -I $(CORNFLAKES_PATH)/mlx5-datapath-c
 #CORNFLAKES_LDFLAGS := -L$(CORNFLAKES_PATH)/target/release
-CFLAGS += $(CORNFLAKES_CFLAGS)
+CF_TAPIR_CFLAGS := -I $(CORNFLAKES_PATH)/tapir
+CFLAGS += $(MLX5_CFLAGS)
+CFLAGS += $(CF_TAPIR_CFLAGS)
 #CFLAGS += $(CORNFLAKES_LDFLAGS)
 #LDFLAGS += $(CORNFLAKES_LDFLAGS)
-LIBS = -lmlx5_datapath_c
+LIBS = -lmlx5_datapath_c -ltapir
 #LDFLAGS += -lmlx5_datapath_c
 # Google test framework. This doesn't use pkgconfig
 GTEST_DIR := /usr/src/gtest

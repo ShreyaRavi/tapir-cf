@@ -52,6 +52,7 @@
 #include <stdlib.h>
 
 #include "mlx5_datapath_cpp.h"
+#include "tapir_serialized_cpp.h"
 
 using std::pair;
 
@@ -99,8 +100,8 @@ CFTransport::LookupAddress(const transport::Configuration &config,
     return LookupAddress(addr);
 }
 
-CFTransport::CFTransport(void* mlx5Connection)
-    : connection(mlx5Connection)
+CFTransport::CFTransport(void* mlx5Connection, void* bumpArena)
+    : connection(mlx5Connection), arena(bumpArena), stopLoop(false)
 {
     
 }
@@ -261,6 +262,7 @@ void
 CFTransport::Run()
 {
     while (!stopLoop) {
+        
         size_t n = 0;
         void** pkts = Mlx5Connection_pop_raw_packets(connection, &n);
         // if n = 0, continue
@@ -294,7 +296,7 @@ CFTransport::Run()
             receiver->ReceiveMessage(senderAddr, msgType, msg);
 	    Mlx5Connection_RxPacket_free(pkts[i]);
         }
-
+        Bump_reset(arena);
     }
 }
 

@@ -66,7 +66,7 @@ private:
 class CFTransport : public TransportCommon<CFTransportAddress>
 {
 public:
-    CFTransport(void* mlx5Connection);
+    CFTransport(void* mlx5Connection, void* bumpArena);
     virtual ~CFTransport();
     void Register(TransportReceiver *receiver,
                   const transport::Configuration &config,
@@ -79,6 +79,7 @@ public:
     
 private:
     void* connection;
+    void* arena;
     bool stopLoop;
 
     TransportReceiver* receiver;

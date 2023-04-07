@@ -31,7 +31,7 @@
 
 #include "store/tapirstore/server.h"
 #include "mlx5_datapath_cpp.h"
-
+#include "tapir_serialized_cpp.h"
 namespace tapirstore {
 
 using namespace std;
@@ -263,16 +263,18 @@ main(int argc, char **argv)
 
     const char *cf_config = getenv("CONFIG_PATH");
     const char *server_ip = getenv("SERVER_IP");
-    // TODO config file
-    // TODO server ip
     // construct new connection and store the pointer
     void* connection = Mlx5Connection_new(cf_config, server_ip);
-
-    CFTransport transport(connection);
+    void* arena = Bump_with_capacity(
+            32,   // batch_size
+            1024, // max_packet_size
+            64   // max_entries
+        );
+    CFTransport transport(connection, arena);
 
     tapirstore::Server server(linearizable);
 
-    replication::ir::IRReplica replica(config, index, &transport, &server);
+    replication::ir::IRReplica replica(config, index, &transport, &server, arena);
 
     if (keyPath) {
         string key;

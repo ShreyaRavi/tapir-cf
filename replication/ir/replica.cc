@@ -19,7 +19,7 @@ using namespace std;
 using namespace proto;
 
 IRReplica::IRReplica(transport::Configuration config, int myIdx,
-                     Transport *transport, IRAppReplica *app)
+                     Transport *transport, IRAppReplica *app, void* bumpArena)
     : config(std::move(config)), myIdx(myIdx), transport(transport), app(app),
       status(STATUS_NORMAL), view(0), latest_normal_view(0),
       // TODO: Take these filenames in via the command line?
@@ -28,7 +28,7 @@ IRReplica::IRReplica(transport::Configuration config, int myIdx,
                            std::to_string(myIdx) + ".bin"),
       // Note that a leader waits for DO-VIEW-CHANGE messages from f other
       // replicas (as opposed to f + 1) for a total of f + 1 replicas.
-      do_view_change_quorum(config.f)
+      do_view_change_quorum(config.f), arena(bumpArena)
 {
     transport->Register(this, config, myIdx);
 
