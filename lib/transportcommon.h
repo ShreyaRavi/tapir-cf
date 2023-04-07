@@ -67,6 +67,14 @@ public:
     }
 
     virtual bool
+    SendCFMessage(TransportReceiver *src, const TransportAddress &dst,
+                const void* m, const SendCFMessageType type)
+    {
+        const ADDR &dstAddr = dynamic_cast<const ADDR &>(dst);
+        return SendCFMessageInternal(src, dstAddr, m, type, false);
+    }
+
+    virtual bool
     SendMessageToReplica(TransportReceiver *src, int replicaIdx,
                          const Message &m)
     {
@@ -81,6 +89,23 @@ public:
         ASSERT(kv != replicaAddresses[cfg].end());
         
         return SendMessageInternal(src, kv->second, m, false);
+    }
+
+    virtual bool
+    SendCFMessageToReplica(TransportReceiver *src, int replicaIdx,
+                         const void* m, const SendCFMessageType type)
+    {
+	const transport::Configuration *cfg = configurations[src];
+        ASSERT(cfg != NULL);
+
+        if (!replicaAddressesInitialized) {
+            LookupAddresses();
+        }
+        
+        auto kv = replicaAddresses[cfg].find(replicaIdx);
+        ASSERT(kv != replicaAddresses[cfg].end());
+        
+        return SendCFMessageInternal(src, kv->second, m, type, false);
     }
 
     virtual bool
@@ -111,12 +136,54 @@ public:
             return true;
         }
     }
+
+    virtual bool
+    SendCFMessageToAll(TransportReceiver *src, const void* m, const SendCFMessageType type)
+    {
+	const transport::Configuration *cfg = configurations[src];
+        ASSERT(cfg != NULL);
+
+        if (!replicaAddressesInitialized) {
+            LookupAddresses();
+        }
+
+        auto kv = multicastAddresses.find(cfg);
+        if (kv != multicastAddresses.end()) {
+            // Send by multicast if we can
+            return SendCFMessageInternal(src, kv->second, m, type, true);
+        } else {
+            // ...or by individual messages to every replica if not
+            const ADDR &srcAddr = dynamic_cast<const ADDR &>(src->GetAddress());
+            for (auto & kv2 : replicaAddresses[cfg]) {
+                if (srcAddr == kv2.second) {
+                    continue;
+                }
+                if (!SendCFMessageInternal(src, kv2.second, m, type, false)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    virtual bool SendCFMessageInternal(TransportReceiver *src,
+                                     const ADDR &dst,
+                                     const void* m,
+                                     const SendCFMessageType type,
+                                     bool multicast = false) {
+        Panic("Unimplemented SendCFMessageInternal");
+        return false;
+    }
     
 protected:
     virtual bool SendMessageInternal(TransportReceiver *src,
                                      const ADDR &dst,
                                      const Message &m,
                                      bool multicast = false) = 0;
+    // virtual bool SendCFMessageInternal(TransportReceiver *src,
+    //                                  const ADDR &dst,
+    //                                  const void* m,
+    //                                  bool multicast = false) = 0;                                 
     virtual ADDR LookupAddress(const transport::Configuration &cfg,
                                int replicaIdx) = 0;
     virtual const ADDR *
