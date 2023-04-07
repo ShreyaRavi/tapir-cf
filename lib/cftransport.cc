@@ -219,11 +219,15 @@ CFTransport::SendMessageInternal(TransportReceiver *src,
 
 bool
 CFTransport::SendCFMessageInternal(TransportReceiver *src,
-                                    const CFTransportAddress &dst,,
+                                    const CFTransportAddress &dst,
                                     const void* m,
                                     const MessageType type,
-                                    bool multicast = false)
+                                    bool multicast)
 {
+    (void)m;
+    (void)src;
+    (void)dst;
+    (void)multicast;
     switch(type) {
         case REPLY_INCONSISTENT_MESSAGE:
             break;
@@ -237,7 +241,7 @@ CFTransport::SendCFMessageInternal(TransportReceiver *src,
             Panic("Message type in SendCFMessageInternal is unexpected.");
             return false;
     }
-    printf("SendCFMessageInternal\n");
+    printf("sending CFMessage\n");
     return true;
 }
 

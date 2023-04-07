@@ -170,7 +170,7 @@ public:
                                      const ADDR &dst,
                                      const void* m,
                                      const MessageType type,
-                                     bool multicast = false) {
+                                     bool multicast) {
         Panic("Unimplemented SendCFMessageInternal");
         return false;
     }

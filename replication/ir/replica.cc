@@ -146,6 +146,8 @@ IRReplica::HandleProposeInconsistent(const TransportAddress &remote,
     }
 
     // Send the reply
+    // NOTE: CORNFLAKES
+    // transport->SendCFMessage(this, remote, &reply, REPLY_INCONSISTENT_MESSAGE);
     transport->SendMessage(this, remote, reply);
 
 }

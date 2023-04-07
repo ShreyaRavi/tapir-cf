@@ -87,6 +87,11 @@ private:
     bool SendMessageInternal(TransportReceiver *src,
                              const CFTransportAddress &dst,
                              const Message &m, bool multicast = false);
+    bool SendCFMessageInternal(TransportReceiver *src,
+                             const CFTransportAddress &dst,
+                             const void* m, const MessageType type,
+                             bool multicast = false);
+
     CFTransportAddress
     LookupAddress(const transport::ReplicaAddress &addr);
     CFTransportAddress
