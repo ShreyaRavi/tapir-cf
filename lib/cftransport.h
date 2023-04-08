@@ -89,7 +89,7 @@ private:
                              const Message &m, bool multicast = false);
     bool SendCFMessageInternal(TransportReceiver *src,
                              const CFTransportAddress &dst,
-                             const void* m, const MessageType type,
+			     void* m, const MessageType type,
                              bool multicast = false);
 
     CFTransportAddress

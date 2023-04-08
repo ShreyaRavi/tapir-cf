@@ -68,7 +68,7 @@ public:
 
     virtual bool
     SendCFMessage(TransportReceiver *src, const TransportAddress &dst,
-                const void* m, const MessageType type)
+                void* m, const MessageType type)
     {
         const ADDR &dstAddr = dynamic_cast<const ADDR &>(dst);
         return SendCFMessageInternal(src, dstAddr, m, type, false);
@@ -93,7 +93,7 @@ public:
 
     virtual bool
     SendCFMessageToReplica(TransportReceiver *src, int replicaIdx,
-                         const void* m, const MessageType type)
+                         void* m, const MessageType type)
     {
 	const transport::Configuration *cfg = configurations[src];
         ASSERT(cfg != NULL);
@@ -138,7 +138,7 @@ public:
     }
 
     virtual bool
-    SendCFMessageToAll(TransportReceiver *src, const void* m, const MessageType type)
+    SendCFMessageToAll(TransportReceiver *src, void* m, const MessageType type)
     {
 	const transport::Configuration *cfg = configurations[src];
         ASSERT(cfg != NULL);
@@ -168,7 +168,7 @@ public:
 
     virtual bool SendCFMessageInternal(TransportReceiver *src,
                                      const ADDR &dst,
-                                     const void* m,
+                                     void* m,
                                      const MessageType type,
                                      bool multicast) {
         Panic("Unimplemented SendCFMessageInternal");
@@ -180,10 +180,6 @@ protected:
                                      const ADDR &dst,
                                      const Message &m,
                                      bool multicast = false) = 0;
-    // virtual bool SendCFMessageInternal(TransportReceiver *src,
-    //                                  const ADDR &dst,
-    //                                  const void* m,
-    //                                  bool multicast = false) = 0;                                 
     virtual ADDR LookupAddress(const transport::Configuration &cfg,
                                int replicaIdx) = 0;
     virtual const ADDR *

@@ -220,16 +220,17 @@ CFTransport::SendMessageInternal(TransportReceiver *src,
 bool
 CFTransport::SendCFMessageInternal(TransportReceiver *src,
                                     const CFTransportAddress &dst,
-                                    const void* m,
+                                    void* m,
                                     const MessageType type,
                                     bool multicast)
 {
-    (void)m;
-    (void)src;
-    (void)dst;
     (void)multicast;
+    uintptr_t conn_id = dynamic_cast<const CFTransportAddress &>(dst).conn_id;
+    uint32_t msg_id = dynamic_cast<const CFTransportAddress &>(dst).msg_id;
+
     switch(type) {
         case REPLY_INCONSISTENT_MESSAGE:
+            Mlx5Connection_ReplyInconsistentMessage_queue_cornflakes_arena_object(connection, msg_id, conn_id, m, true);
             break;
         case REPLY_CONSENSUS_MESSAGE:
             break;
@@ -241,7 +242,6 @@ CFTransport::SendCFMessageInternal(TransportReceiver *src,
             Panic("Message type in SendCFMessageInternal is unexpected.");
             return false;
     }
-    printf("sending CFMessage\n");
     return true;
 }
 

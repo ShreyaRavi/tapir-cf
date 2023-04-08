@@ -7,7 +7,7 @@
  **********************************************************************/
 
 #include "replication/ir/replica.h"
-
+#include "tapir_serialized_cpp.h"
 #include <cstdint>
 
 #include <set>
@@ -124,31 +124,38 @@ IRReplica::HandleProposeInconsistent(const TransportAddress &remote,
 
     // Check record if we've already handled this request
     RecordEntry *entry = record.Find(opid);
-    ReplyInconsistentMessage reply;
+    //ReplyInconsistentMessage reply;
+    void* reply;
+    ReplyInconsistentMessage_new_in(arena, &reply); 
     if (entry != NULL) {
         // If we already have this op in our record, then just return it
-        reply.set_view(entry->view);
-        reply.set_replicaidx(myIdx);
-        reply.mutable_opid()->set_clientid(clientid);
-        reply.mutable_opid()->set_clientreqid(clientreqid);
-        reply.set_finalized(entry->state == RECORD_STATE_FINALIZED);
+        ReplyInconsistentMessage_set_view(reply, entry->view); 
+        ReplyInconsistentMessage_set_replicaIdx(reply, myIdx);
+        void* opid;
+        ReplyInconsistentMessage_get_mut_opid(reply, &opid);
+        OpID_set_clientid(opid, clientid);
+        OpID_set_clientreqid(opid, clientreqid);
+        ReplyInconsistentMessage_set_finalized(reply, entry->state == RECORD_STATE_FINALIZED);    
+
     } else {
         // Otherwise, put it in our record as tentative
         record.Add(view, opid, msg.req(), RECORD_STATE_TENTATIVE,
                    RECORD_TYPE_INCONSISTENT);
 
         // 3. Return Reply
-        reply.set_view(view);
-        reply.set_replicaidx(myIdx);
-        reply.mutable_opid()->set_clientid(clientid);
-        reply.mutable_opid()->set_clientreqid(clientreqid);
-        reply.set_finalized(0);
+        ReplyInconsistentMessage_set_view(reply, view); 
+        ReplyInconsistentMessage_set_replicaIdx(reply, myIdx);
+        void* opid;
+        ReplyInconsistentMessage_get_mut_opid(reply, &opid);
+        OpID_set_clientid(opid, clientid);
+        OpID_set_clientreqid(opid, clientreqid);
+        ReplyInconsistentMessage_set_finalized(reply, 0);  
     }
 
     // Send the reply
     // NOTE: CORNFLAKES
-    // transport->SendCFMessage(this, remote, &reply, REPLY_INCONSISTENT_MESSAGE);
-    transport->SendMessage(this, remote, reply);
+    transport->SendCFMessage(this, remote, reply, REPLY_INCONSISTENT_MESSAGE);
+    //transport->SendMessage(this, remote, reply);
 
 }
 
