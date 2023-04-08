@@ -50,6 +50,8 @@
 #include <netdb.h>
 #include <signal.h>
 
+#include "tapir_serialized_cpp.h"
+
 const size_t MAX_UDP_MESSAGE_SIZE = 9000; // XXX
 const int SOCKET_BUF_SIZE = 10485760;
 
@@ -182,6 +184,12 @@ UDPTransport::UDPTransport(double dropRate, double reorderRate,
         int dscp, bool handleSignals)
     : dropRate(dropRate), reorderRate(reorderRate), dscp(dscp)
 {
+
+    arena = Bump_with_capacity(
+        32,   // batch_size
+        1024, // max_packet_size
+        64   // max_entries
+    );
 
     lastTimerId = 0;
     lastFragMsgId = 0;
@@ -381,6 +389,24 @@ UDPTransport::Register(TransportReceiver *receiver,
     }
 }
 
+static MessageType
+GetResponseType(const MessageType mType)
+{
+    if (mType == PROPOSE_INCONSISTENT_MESSAGE) {
+        return REPLY_INCONSISTENT_MESSAGE;
+    } else if (mType == FINALIZE_INCONSISTENT_MESSAGE) {
+        return CONFIRM_MESSAGE;
+    } else if (mType == PROPOSE_CONSENSUS_MESSAGE) {
+        return REPLY_CONSENSUS_MESSAGE;
+    } else if (mType == FINALIZE_CONSENSUS_MESSAGE) {
+        return CONFIRM_MESSAGE;
+    } else if (mType == UNLOGGED_REQUEST_MESSAGE) {
+        return UNLOGGED_REPLY_MESSAGE;
+    } else {
+        Panic("bad request type in GetResponseType.");
+    }
+}
+
 static size_t
 SerializeMessage(const ::google::protobuf::Message &m,
                  const uint32_t msgId,
@@ -407,7 +433,11 @@ SerializeMessage(const ::google::protobuf::Message &m,
         msg_type = CONFIRM_MESSAGE;
     } else if (type == "replication.ir.proto.UnloggedReplyMessage") {
         msg_type = UNLOGGED_REPLY_MESSAGE;
+    } else {
+        Panic("unexpected type in SerializeMessage.");
     }
+
+    msgRespType[msgId] = GetResponseType(static_cast<MessageType>(msg_type));
 
     if (msg_type == -1) {
         printf("type: %s\n", type.c_str());
@@ -511,7 +541,24 @@ static void
 DecodePacket(const char *buf, size_t sz, string &type, string &msg)
 {
     const char *ptr = buf;
-    // ignore first 4 bytes: msg id
+    // first 4 bytes: msg id
+    uint32_t msgId = *((uint32_t *)ptr);
+    if (msgRespType.count(msgId) == 0) {
+        Panic("could not find msg id in resp type map in DecodePacket().")
+    }
+    MessageType respType = msgRespType[msgId];
+    void* reply;
+    if (respType == REPLY_INCONSISTENT_MESSAGE) {
+        ReplyInconsistentMessage_new_in(arena, &reply)
+        ReplyInconsistentMessage_deserialize(reply, buf, 0, arena);
+        uint64_t view = ReplyInconsistentMessage_get_view();
+        printf("view: %"PRIu64"\n", view);
+        uint32_t replicaIdx = ReplyInconsistentMessage_get_replicaIdx();
+        printf("replicaIdx: %"PRIu32"\n", replicaIdx);
+        uint32_t finalized = ReplyInconsistentMessage_get_finalized();
+        printf("finalized: %"PRIu32"\n", finalized);
+    }
+ 
     ptr += sizeof(uint32_t);
 
     int msg_type = *((int *)ptr);

@@ -82,6 +82,8 @@ private:
     void* arena;
     bool stopLoop;
 
+    unordered_map<uint32_t, MessageType> msgid2respType;
+
     TransportReceiver* receiver;
     
     bool SendMessageInternal(TransportReceiver *src,

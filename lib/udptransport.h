@@ -87,6 +87,11 @@ private:
         int id;
     };
 
+    void* arena;
+
+    unordered_map<uint32_t, MessageType> msgRespType;
+
+
     double dropRate;
     double reorderRate;
     std::uniform_real_distribution<double> uniformDist;

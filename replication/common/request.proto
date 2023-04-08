@@ -3,7 +3,8 @@ syntax = "proto2";
 package replication;
 
 message Request {
-     required bytes op = 1;
+     // should be TapirRequest
+     required bytes op = 1; 
      required uint64 clientid = 2;
      required uint64 clientreqid = 3;
 }
