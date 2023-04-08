@@ -585,6 +585,7 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg)
         printf("message type: %d\n", msg_type);
         Panic("Decoding unknown message type.");
     }
+    printf("type: %s\n", type);
 
     size_t msgLen = *((size_t *)ptr);
     ptr += sizeof(size_t);
