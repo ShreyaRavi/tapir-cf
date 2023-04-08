@@ -28,7 +28,7 @@
  * SOFTWARE.
  *
  **********************************************************************/
-
+#define __STDC_FORMAT_MACROS
 #include "lib/assert.h"
 #include "lib/configuration.h"
 #include "lib/message.h"
@@ -410,7 +410,7 @@ GetResponseType(const MessageType mType)
 static size_t
 SerializeMessage(const ::google::protobuf::Message &m,
                  const uint32_t msgId,
-		 std::unique_ptr<char[]> *out)
+		 std::unique_ptr<char[]> *out, std::unordered_map<uint32_t, MessageType>& respTypeMap)
 {
     string data = m.SerializeAsString();
     string type = m.GetTypeName();
@@ -437,7 +437,7 @@ SerializeMessage(const ::google::protobuf::Message &m,
         Panic("unexpected type in SerializeMessage.");
     }
 
-    msgRespType[msgId] = GetResponseType(static_cast<MessageType>(msg_type));
+    respTypeMap[msgId] = GetResponseType(static_cast<MessageType>(msg_type));
 
     if (msg_type == -1) {
         printf("type: %s\n", type.c_str());
@@ -478,7 +478,7 @@ UDPTransport::SendMessageInternal(TransportReceiver *src,
     // Serialize message
     std::unique_ptr<char[]> unique_buf;
     uint32_t msgId = ++lastMsgId;
-    size_t msgLen = SerializeMessage(m, msgId, &unique_buf);
+    size_t msgLen = SerializeMessage(m, msgId, &unique_buf, msgRespType);
     char *buf = unique_buf.get();
     int fd = fds[src];
 
@@ -538,25 +538,29 @@ UDPTransport::Stop()
 }
 
 static void
-DecodePacket(const char *buf, size_t sz, string &type, string &msg)
+DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unordered_map<uint32_t, MessageType>& respTypeMap, void* arena)
 {
     const char *ptr = buf;
     // first 4 bytes: msg id
     uint32_t msgId = *((uint32_t *)ptr);
-    if (msgRespType.count(msgId) == 0) {
-        Panic("could not find msg id in resp type map in DecodePacket().")
+    if (respTypeMap.count(msgId) == 0) {
+        Panic("could not find msg id in resp type map in DecodePacket().");
     }
-    MessageType respType = msgRespType[msgId];
+    MessageType respType = respTypeMap[msgId];
     void* reply;
     if (respType == REPLY_INCONSISTENT_MESSAGE) {
-        ReplyInconsistentMessage_new_in(arena, &reply)
+        ReplyInconsistentMessage_new_in(arena, &reply);
         ReplyInconsistentMessage_deserialize(reply, buf, 0, arena);
-        uint64_t view = ReplyInconsistentMessage_get_view();
-        printf("view: %"PRIu64"\n", view);
-        uint32_t replicaIdx = ReplyInconsistentMessage_get_replicaIdx();
-        printf("replicaIdx: %"PRIu32"\n", replicaIdx);
-        uint32_t finalized = ReplyInconsistentMessage_get_finalized();
-        printf("finalized: %"PRIu32"\n", finalized);
+        uint64_t view;
+        ReplyInconsistentMessage_get_view(reply, &view);
+        printf("view: %" PRIu64 "\n", view);
+        uint32_t replicaIdx;
+        ReplyInconsistentMessage_get_replicaIdx(reply, &replicaIdx);
+        printf("replicaIdx: %" PRIu32 "\n", replicaIdx);
+        uint32_t finalized;
+        ReplyInconsistentMessage_get_finalized(reply, &finalized);
+        printf("finalized: %" PRIu32 "\n", finalized);
+	// maybe construct the protobuf and serialize it to string and set that to msg.
     }
  
     ptr += sizeof(uint32_t);
@@ -585,7 +589,7 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg)
         printf("message type: %d\n", msg_type);
         Panic("Decoding unknown message type.");
     }
-    printf("type: %s\n", type);
+    printf("type: %s\n", type.c_str());
 
     size_t msgLen = *((size_t *)ptr);
     ptr += sizeof(size_t);
@@ -628,7 +632,7 @@ UDPTransport::OnReadable(int fd)
         size_t typeLen = *((size_t *)buf);
         if (typeLen != 0) {
             // Not a fragment. Decode the packet
-            DecodePacket(buf, sz, msgType, msg);
+            DecodePacket(buf, sz, msgType, msg, msgRespType, arena);
         } else {
             // This is a fragment. Decode the header
             const char *ptr = buf;
@@ -670,7 +674,7 @@ UDPTransport::OnReadable(int fd)
             if (info.data.size() == msgLen) {
                 Debug("Completed packet reconstruction");
                 DecodePacket(info.data.c_str(), info.data.size(),
-                             msgType, msg);
+                             msgType, msg, msgRespType, arena);
                 info.msgId = 0;
                 info.data.clear();
             } else {
