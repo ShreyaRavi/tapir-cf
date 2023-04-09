@@ -137,11 +137,11 @@ include replication/vr/Rules.mk
 include replication/ir/Rules.mk
 include store/common/Rules.mk
 include store/tapirstore/Rules.mk
-include store/strongstore/Rules.mk
-include store/weakstore/Rules.mk
+#include store/strongstore/Rules.mk
+###include store/weakstore/Rules.mk
 include store/benchmark/Rules.mk
-include lockserver/Rules.mk
-include timeserver/Rules.mk
+#include lockserver/Rules.mk
+#include timeserver/Rules.mk
 include libtapir/Rules.mk
 ##################################################################
 # General rules

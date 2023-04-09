@@ -50,6 +50,7 @@
 #include <netdb.h>
 #include <signal.h>
 
+#include "replication/ir/ir-proto.pb.h"
 #include "tapir_serialized_cpp.h"
 
 const size_t MAX_UDP_MESSAGE_SIZE = 9000; // XXX
@@ -546,60 +547,74 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
     if (respTypeMap.count(msgId) == 0) {
         Panic("could not find msg id in resp type map in DecodePacket().");
     }
+    ptr += sizeof(uint32_t);
+ 
     MessageType respType = respTypeMap[msgId];
+    respTypeMap.erase(msgId);
     void* reply;
     if (respType == REPLY_INCONSISTENT_MESSAGE) {
         ReplyInconsistentMessage_new_in(arena, &reply);
-        ReplyInconsistentMessage_deserialize(reply, buf, 0, arena);
+        // do not include msg id in size bc ptr is incremented past the msg id
+        ReplyInconsistentMessage_deserialize(reply, ptr, sz - sizeof(uint32_t), 0, arena);
         uint64_t view;
         ReplyInconsistentMessage_get_view(reply, &view);
-        printf("view: %" PRIu64 "\n", view);
         uint32_t replicaIdx;
         ReplyInconsistentMessage_get_replicaIdx(reply, &replicaIdx);
-        printf("replicaIdx: %" PRIu32 "\n", replicaIdx);
         uint32_t finalized;
         ReplyInconsistentMessage_get_finalized(reply, &finalized);
-        printf("finalized: %" PRIu32 "\n", finalized);
-	// maybe construct the protobuf and serialize it to string and set that to msg.
-    }
- 
-    ptr += sizeof(uint32_t);
+        
+        void* opid;
+        ReplyInconsistentMessage_get_mut_opid(reply, &opid);
+        
+        uint64_t clientid;
+        OpID_get_clientid(opid, &clientid);
 
-    int msg_type = *((int *)ptr);
-    ptr += sizeof(int);
-    if (msg_type == FINALIZE_INCONSISTENT_MESSAGE) {
-        type = "replication.ir.proto.FinalizeInconsistentMessage";
-    } else if (msg_type == PROPOSE_INCONSISTENT_MESSAGE) {
-        type = "replication.ir.proto.ProposeInconsistentMessage";
-    } else if (msg_type == FINALIZE_CONSENSUS_MESSAGE) {
-        type = "replication.ir.proto.FinalizeConsensusMessage";
-    } else if (msg_type == PROPOSE_CONSENSUS_MESSAGE) {
-        type = "replication.ir.proto.ProposeConsensusMessage";
-    } else if (msg_type == UNLOGGED_REQUEST_MESSAGE) {
-        type = "replication.ir.proto.UnloggedRequestMessage";
-    } else if (msg_type == REPLY_INCONSISTENT_MESSAGE) {
-        type = "replication.ir.proto.ReplyInconsistentMessage";
-    } else if (msg_type == REPLY_CONSENSUS_MESSAGE) {
-        type = "replication.ir.proto.ReplyConsensusMessage";
-    } else if (msg_type == CONFIRM_MESSAGE){
-        type = "replication.ir.proto.ConfirmMessage";
-    } else if (msg_type == UNLOGGED_REPLY_MESSAGE) {
-        type = "replication.ir.proto.UnloggedReplyMessage";
+        uint64_t clientreqid;
+        OpID_get_clientreqid(opid, &clientreqid);
+
+        replication::ir::proto::ReplyInconsistentMessage replyProto;
+        replyProto.set_view(view);
+        replyProto.set_replicaidx(replicaIdx);
+        replyProto.mutable_opid()->set_clientid(clientid);
+        replyProto.mutable_opid()->set_clientreqid(clientreqid);
+        replyProto.set_finalized(finalized);
+        // maybe construct the protobuf and serialize it to string and set that to msg.
+        type = replyProto.GetTypeName();
+        msg = replyProto.SerializeAsString();
     } else {
-        printf("message type: %d\n", msg_type);
-        Panic("Decoding unknown message type.");
-    }
-    printf("type: %s\n", type.c_str());
-
-    size_t msgLen = *((size_t *)ptr);
-    ptr += sizeof(size_t);
-
-    ASSERT(ptr-buf < (int)sz);
-    ASSERT(ptr+msgLen-buf <= (int)sz);
-
-    msg = string(ptr, msgLen);
-    ptr += msgLen;
+        int msg_type = *((int *)ptr);
+        ptr += sizeof(int);
+        if (msg_type == FINALIZE_INCONSISTENT_MESSAGE) {
+            type = "replication.ir.proto.FinalizeInconsistentMessage";
+        } else if (msg_type == PROPOSE_INCONSISTENT_MESSAGE) {
+            type = "replication.ir.proto.ProposeInconsistentMessage";
+        } else if (msg_type == FINALIZE_CONSENSUS_MESSAGE) {
+            type = "replication.ir.proto.FinalizeConsensusMessage";
+        } else if (msg_type == PROPOSE_CONSENSUS_MESSAGE) {
+            type = "replication.ir.proto.ProposeConsensusMessage";
+        } else if (msg_type == UNLOGGED_REQUEST_MESSAGE) {
+            type = "replication.ir.proto.UnloggedRequestMessage";
+        } else if (msg_type == REPLY_INCONSISTENT_MESSAGE) {
+            type = "replication.ir.proto.ReplyInconsistentMessage";
+        } else if (msg_type == REPLY_CONSENSUS_MESSAGE) {
+            type = "replication.ir.proto.ReplyConsensusMessage";
+        } else if (msg_type == CONFIRM_MESSAGE){
+            type = "replication.ir.proto.ConfirmMessage";
+        } else if (msg_type == UNLOGGED_REPLY_MESSAGE) {
+            type = "replication.ir.proto.UnloggedReplyMessage";
+        } else {
+            printf("message type: %d\n", msg_type);
+            Panic("Decoding unknown message type.");
+        }
+        size_t msgLen = *((size_t *)ptr);
+        ptr += sizeof(size_t);
     
+        ASSERT(ptr-buf < (int)sz);
+        ASSERT(ptr+msgLen-buf <= (int)sz);
+    
+        msg = string(ptr, msgLen);
+        ptr += msgLen;
+    }
 }
 
 void
