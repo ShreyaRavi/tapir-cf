@@ -581,6 +581,31 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
         // maybe construct the protobuf and serialize it to string and set that to msg.
         type = replyProto.GetTypeName();
         msg = replyProto.SerializeAsString();
+    } else if (respType == REPLY_CONSENSUS_MESSAGE) {
+        ConfirmMessage_new_in(arena, &reply);
+        // do not include msg id in size bc ptr is incremented past the msg id
+        ConfirmMessage_deserialize(reply, ptr, sz - sizeof(uint32_t), 0, arena);
+        uint64_t view;
+        ConfirmMessage_get_view(reply, &view);
+        uint32_t replicaIdx;
+        ConfirmMessage_get_replicaIdx(reply, &replicaIdx);
+        
+        void* opid;
+        ConfirmMessage_get_mut_opid(reply, &opid);
+        
+        uint64_t clientid;
+        OpID_get_clientid(opid, &clientid);
+        uint64_t clientreqid;
+        OpID_get_clientreqid(opid, &clientreqid);
+
+        replication::ir::proto::ReplyInconsistentMessage replyProto;
+        replyProto.set_view(view);
+        replyProto.set_replicaidx(replicaIdx);
+        replyProto.mutable_opid()->set_clientid(clientid);
+        replyProto.mutable_opid()->set_clientreqid(clientreqid);
+        // maybe construct the protobuf and serialize it to string and set that to msg.
+        type = replyProto.GetTypeName();
+        msg = replyProto.SerializeAsString();
     } else {
         int msg_type = *((int *)ptr);
         ptr += sizeof(int);
@@ -594,10 +619,6 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
             type = "replication.ir.proto.ProposeConsensusMessage";
         } else if (msg_type == UNLOGGED_REQUEST_MESSAGE) {
             type = "replication.ir.proto.UnloggedRequestMessage";
-        } else if (msg_type == REPLY_INCONSISTENT_MESSAGE) {
-            type = "replication.ir.proto.ReplyInconsistentMessage";
-        } else if (msg_type == REPLY_CONSENSUS_MESSAGE) {
-            type = "replication.ir.proto.ReplyConsensusMessage";
         } else if (msg_type == CONFIRM_MESSAGE){
             type = "replication.ir.proto.ConfirmMessage";
         } else if (msg_type == UNLOGGED_REPLY_MESSAGE) {

@@ -179,13 +179,15 @@ IRReplica::HandleFinalizeInconsistent(const TransportAddress &remote,
         // Execute the operation
         app->ExecInconsistentUpcall(entry->request.op());
 
-        // Send the reply
-        ConfirmMessage reply;
-        reply.set_view(view);
-        reply.set_replicaidx(myIdx);
-        *reply.mutable_opid() = msg.opid();
-
-        transport->SendMessage(this, remote, reply);
+        void* reply;
+        ConfirmMessage_new_in(arena, &reply); 
+        ConfirmMessage_set_view(reply, view); 
+        ConfirmMessage_set_replicaIdx(reply, myIdx);
+        void* opid;
+        ConfirmMessage_get_mut_opid(reply, &opid);
+        OpID_set_clientid(opid, msg.opid().clientid());
+        OpID_set_clientreqid(opid, msg.opid().clientreqid());
+        transport->SendCFMessage(this, remote, reply, CONFIRM_MESSAGE);
     } else {
         // Ignore?
     }
@@ -259,14 +261,15 @@ IRReplica::HandleFinalizeConsensus(const TransportAddress &remote,
         }
 
         // Send the reply
-        ConfirmMessage reply;
-        reply.set_view(view);
-        reply.set_replicaidx(myIdx);
-        *reply.mutable_opid() = msg.opid();
-
-        if (!transport->SendMessage(this, remote, reply)) {
-            Warning("Failed to send reply message");
-        }
+        void* reply;
+        ConfirmMessage_new_in(arena, &reply); 
+        ConfirmMessage_set_view(reply, view); 
+        ConfirmMessage_set_replicaIdx(reply, myIdx);
+        void* opid;
+        ConfirmMessage_get_mut_opid(reply, &opid);
+        OpID_set_clientid(opid, msg.opid().clientid());
+        OpID_set_clientreqid(opid, msg.opid().clientreqid());
+        transport->SendCFMessage(this, remote, reply, CONFIRM_MESSAGE);
     } else {
         // Ignore?
         Warning("Finalize request for unknown consensus operation");
