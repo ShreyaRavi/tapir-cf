@@ -581,7 +581,7 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
         // maybe construct the protobuf and serialize it to string and set that to msg.
         type = replyProto.GetTypeName();
         msg = replyProto.SerializeAsString();
-    } else if (respType == REPLY_CONSENSUS_MESSAGE) {
+    } else if (respType == CONFIRM_MESSAGE) {
         ConfirmMessage_new_in(arena, &reply);
         // do not include msg id in size bc ptr is incremented past the msg id
         ConfirmMessage_deserialize(reply, ptr, sz - sizeof(uint32_t), 0, arena);
@@ -598,7 +598,7 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
         uint64_t clientreqid;
         OpID_get_clientreqid(opid, &clientreqid);
 
-        replication::ir::proto::ReplyInconsistentMessage replyProto;
+        replication::ir::proto::ConfirmMessage replyProto;
         replyProto.set_view(view);
         replyProto.set_replicaidx(replicaIdx);
         replyProto.mutable_opid()->set_clientid(clientid);
@@ -619,8 +619,8 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
             type = "replication.ir.proto.ProposeConsensusMessage";
         } else if (msg_type == UNLOGGED_REQUEST_MESSAGE) {
             type = "replication.ir.proto.UnloggedRequestMessage";
-        } else if (msg_type == CONFIRM_MESSAGE){
-            type = "replication.ir.proto.ConfirmMessage";
+        } else if (msg_type == REPLY_CONSENSUS_MESSAGE) {
+            type = "replication.ir.proto.ReplyConsensusMessage";
         } else if (msg_type == UNLOGGED_REPLY_MESSAGE) {
             type = "replication.ir.proto.UnloggedReplyMessage";
         } else {
