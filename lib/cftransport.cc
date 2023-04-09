@@ -230,7 +230,6 @@ CFTransport::SendCFMessageInternal(TransportReceiver *src,
 
     switch(type) {
         case REPLY_INCONSISTENT_MESSAGE:
-            printf("sending reply inconsistent message\n");
             Mlx5Connection_ReplyInconsistentMessage_queue_cornflakes_arena_object(connection, msg_id, conn_id, m, true);
             break;
         case REPLY_CONSENSUS_MESSAGE:
