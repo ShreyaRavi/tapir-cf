@@ -656,7 +656,7 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
 
         replication::ir::proto::UnloggedReplyMessage replyProto;
         replyProto.set_clientreqid(clientreqid);
-        replyProto.set_result(resultPtr, resultLen);
+        replyProto.set_reply(resultPtr, resultLen);
         // maybe construct the protobuf and serialize it to string and set that to msg.
         type = replyProto.GetTypeName();
         msg = replyProto.SerializeAsString();
