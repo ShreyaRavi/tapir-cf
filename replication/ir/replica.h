@@ -100,8 +100,6 @@ private:
     int myIdx; // Replica index into config.
     Transport *transport;
     IRAppReplica *app;
-    void* connection;
-    void* arena;
 
     ReplicaStatus status;
 
@@ -123,6 +121,9 @@ private:
     // v, we should be able to garbage collect all quorums for views less than
     // v.
     QuorumSet<view_t, proto::DoViewChangeMessage> do_view_change_quorum;
+
+    void* arena;
+    void* connection;
 };
 
 } // namespace ir

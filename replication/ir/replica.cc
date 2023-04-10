@@ -224,7 +224,7 @@ IRReplica::HandleProposeConsensus(const TransportAddress &remote,
         OpID_set_clientreqid(opid, clientreqid);
 
         void* cfResult;
-        CFBytes_new(entry->result.c_str(), entry->result.length(), connection, arena, &cfResult);
+        CFBytes_new((unsigned char*) entry->result.c_str(), entry->result.length(), connection, arena, &cfResult);
         ReplyConsensusMessage_set_result(reply, cfResult);
         ReplyConsensusMessage_set_finalized(reply, entry->state == RECORD_STATE_FINALIZED); 
     } else {
@@ -236,7 +236,7 @@ IRReplica::HandleProposeConsensus(const TransportAddress &remote,
         // Put it in our record as tentative
         record.Add(view, opid, msg.req(), RECORD_STATE_TENTATIVE,
                    RECORD_TYPE_CONSENSUS, result);
-
+        result = "test string";
         printf("cfbytes str: %s\n", result.c_str());
         // 3. Return Reply
         ReplyConsensusMessage_set_view(reply, view); 
@@ -247,7 +247,7 @@ IRReplica::HandleProposeConsensus(const TransportAddress &remote,
         OpID_set_clientreqid(opid, clientreqid);
 
         void* cfResult;
-        CFBytes_new(result.c_str(), result.length(), connection, arena, &cfResult);
+        CFBytes_new((unsigned char*) result.c_str(), result.length(), connection, arena, &cfResult);
         ReplyConsensusMessage_set_result(reply, cfResult);
         ReplyConsensusMessage_set_finalized(reply, 0); 
     }

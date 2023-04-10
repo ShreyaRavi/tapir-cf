@@ -617,8 +617,8 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
 
         void* result;
         ReplyConsensusMessage_get_result(reply, &result);
-        void* resultPtr;
-        uint32_t resultLen;
+        const unsigned char* resultPtr;
+        uint64_t resultLen;
         CFBytes_unpack(result, &resultPtr, &resultLen);
         // print this to check that it's the same? print string and explicitly wrrite the string in replica.cc
         string cfbytesstr = string((char *)resultPtr, resultLen);
