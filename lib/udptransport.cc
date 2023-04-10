@@ -622,7 +622,6 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
         CFBytes_unpack(result, &resultPtr, &resultLen);
         // print this to check that it's the same? print string and explicitly wrrite the string in replica.cc
         string cfbytesstr = string((char *)resultPtr, resultLen);
-        printf("cfbytes str: %s\n", cfbytesstr.c_str());
 
         uint32_t finalized;
         ReplyConsensusMessage_get_finalized(reply, &finalized);

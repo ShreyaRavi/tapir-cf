@@ -207,7 +207,8 @@ IRReplica::HandleProposeConsensus(const TransportAddress &remote,
     // Check record if we've already handled this request
     RecordEntry *entry = record.Find(opid);
     // ReplyConsensusMessage reply;
-    void * reply;
+    void* reply;
+    ReplyConsensusMessage_new_in(arena, &reply);  
     if (entry != NULL) {
         // If we already have this op in our record, then just return it
         // reply.set_view(entry->view);
@@ -236,8 +237,6 @@ IRReplica::HandleProposeConsensus(const TransportAddress &remote,
         // Put it in our record as tentative
         record.Add(view, opid, msg.req(), RECORD_STATE_TENTATIVE,
                    RECORD_TYPE_CONSENSUS, result);
-        result = "test string";
-        printf("cfbytes str: %s\n", result.c_str());
         // 3. Return Reply
         ReplyConsensusMessage_set_view(reply, view); 
         ReplyConsensusMessage_set_replicaIdx(reply, myIdx);
@@ -247,9 +246,9 @@ IRReplica::HandleProposeConsensus(const TransportAddress &remote,
         OpID_set_clientreqid(opid, clientreqid);
 
         void* cfResult;
-        CFBytes_new((unsigned char*) result.c_str(), result.length(), connection, arena, &cfResult);
+        CFBytes_new((unsigned char*) (result.c_str()), result.length(), connection, arena, &cfResult);
         ReplyConsensusMessage_set_result(reply, cfResult);
-        ReplyConsensusMessage_set_finalized(reply, 0); 
+        ReplyConsensusMessage_set_finalized(reply, 0);
     }
 
     // Send the reply
