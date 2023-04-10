@@ -606,6 +606,44 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
         // maybe construct the protobuf and serialize it to string and set that to msg.
         type = replyProto.GetTypeName();
         msg = replyProto.SerializeAsString();
+    } else if (respType == REPLY_CONSENSUS_MESSAGE) {
+        ReplyConsensusMessage_new_in(arena, &reply);
+        // do not include msg id in size bc ptr is incremented past the msg id
+        ReplyConsensusMessage_deserialize(reply, ptr, sz - sizeof(uint32_t), 0, arena);
+        uint64_t view;
+        ReplyConsensusMessage_get_view(reply, &view);
+        uint32_t replicaIdx;
+        ReplyConsensusMessage_get_replicaIdx(reply, &replicaIdx);
+
+        void* result;
+        ReplyConsensusMessage_get_result(reply, &result);
+        void* resultPtr;
+        uint32_t resultLen;
+        CFBytes_unpack(result, &resultPtr, &resultLen);
+        // print this to check that it's the same? print string and explicitly wrrite the string in replica.cc
+        string cfbytesstr = string((char *)resultPtr, resultLen);
+        printf("cfbytes str: %s\n", cfbytesstr.c_str());
+
+        uint32_t finalized;
+        ReplyConsensusMessage_get_finalized(reply, &finalized);
+        void* opid;
+        ReplyConsensusMessage_get_mut_opid(reply, &opid);
+        
+        uint64_t clientid;
+        OpID_get_clientid(opid, &clientid);
+        uint64_t clientreqid;
+        OpID_get_clientreqid(opid, &clientreqid);
+
+        replication::ir::proto::ReplyConsensusMessage replyProto;
+        replyProto.set_view(view);
+        replyProto.set_replicaidx(replicaIdx);
+        replyProto.mutable_opid()->set_clientid(clientid);
+        replyProto.mutable_opid()->set_clientreqid(clientreqid);
+        replyProto.set_result(resultPtr, resultLen);
+        replyProto.set_finalized(finalized);
+        // maybe construct the protobuf and serialize it to string and set that to msg.
+        type = replyProto.GetTypeName();
+        msg = replyProto.SerializeAsString();
     } else {
         int msg_type = *((int *)ptr);
         ptr += sizeof(int);
@@ -619,8 +657,6 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
             type = "replication.ir.proto.ProposeConsensusMessage";
         } else if (msg_type == UNLOGGED_REQUEST_MESSAGE) {
             type = "replication.ir.proto.UnloggedRequestMessage";
-        } else if (msg_type == REPLY_CONSENSUS_MESSAGE) {
-            type = "replication.ir.proto.ReplyConsensusMessage";
         } else if (msg_type == UNLOGGED_REPLY_MESSAGE) {
             type = "replication.ir.proto.UnloggedReplyMessage";
         } else {

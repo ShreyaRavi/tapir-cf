@@ -19,7 +19,7 @@ using namespace std;
 using namespace proto;
 
 IRReplica::IRReplica(transport::Configuration config, int myIdx,
-                     Transport *transport, IRAppReplica *app, void* bumpArena)
+                     Transport *transport, IRAppReplica *app, void* connection, void* bumpArena)
     : config(std::move(config)), myIdx(myIdx), transport(transport), app(app),
       status(STATUS_NORMAL), view(0), latest_normal_view(0),
       // TODO: Take these filenames in via the command line?
@@ -28,7 +28,7 @@ IRReplica::IRReplica(transport::Configuration config, int myIdx,
                            std::to_string(myIdx) + ".bin"),
       // Note that a leader waits for DO-VIEW-CHANGE messages from f other
       // replicas (as opposed to f + 1) for a total of f + 1 replicas.
-      do_view_change_quorum(config.f), arena(bumpArena)
+      do_view_change_quorum(config.f), arena(bumpArena), connection(connection)
 {
     transport->Register(this, config, myIdx);
 
@@ -206,15 +206,27 @@ IRReplica::HandleProposeConsensus(const TransportAddress &remote,
 
     // Check record if we've already handled this request
     RecordEntry *entry = record.Find(opid);
-    ReplyConsensusMessage reply;
+    // ReplyConsensusMessage reply;
+    void * reply;
     if (entry != NULL) {
         // If we already have this op in our record, then just return it
-        reply.set_view(entry->view);
-        reply.set_replicaidx(myIdx);
-        reply.mutable_opid()->set_clientid(clientid);
-        reply.mutable_opid()->set_clientreqid(clientreqid);
-        reply.set_result(entry->result);
-        reply.set_finalized(entry->state == RECORD_STATE_FINALIZED);
+        // reply.set_view(entry->view);
+        // reply.set_replicaidx(myIdx);
+        // reply.mutable_opid()->set_clientid(clientid);
+        // reply.mutable_opid()->set_clientreqid(clientreqid);
+        // reply.set_result(entry->result);
+        // reply.set_finalized(entry->state == RECORD_STATE_FINALIZED);
+        ReplyConsensusMessage_set_view(reply, entry->view); 
+        ReplyConsensusMessage_set_replicaIdx(reply, myIdx);
+        void* opid;
+        ReplyConsensusMessage_get_mut_opid(reply, &opid);
+        OpID_set_clientid(opid, clientid);
+        OpID_set_clientreqid(opid, clientreqid);
+
+        void* cfResult;
+        CFBytes_new(entry->result.c_str(), entry->result.length(), connection, arena, &cfResult);
+        ReplyConsensusMessage_set_result(reply, cfResult);
+        ReplyConsensusMessage_set_finalized(reply, entry->state == RECORD_STATE_FINALIZED); 
     } else {
         // Execute op
         string result;
@@ -225,17 +237,24 @@ IRReplica::HandleProposeConsensus(const TransportAddress &remote,
         record.Add(view, opid, msg.req(), RECORD_STATE_TENTATIVE,
                    RECORD_TYPE_CONSENSUS, result);
 
+        printf("cfbytes str: %s\n", result.c_str());
         // 3. Return Reply
-        reply.set_view(view);
-        reply.set_replicaidx(myIdx);
-        reply.mutable_opid()->set_clientid(clientid);
-        reply.mutable_opid()->set_clientreqid(clientreqid);
-        reply.set_result(result);
-        reply.set_finalized(0);
+        ReplyConsensusMessage_set_view(reply, view); 
+        ReplyConsensusMessage_set_replicaIdx(reply, myIdx);
+        void* opid;
+        ReplyConsensusMessage_get_mut_opid(reply, &opid);
+        OpID_set_clientid(opid, clientid);
+        OpID_set_clientreqid(opid, clientreqid);
+
+        void* cfResult;
+        CFBytes_new(result.c_str(), result.length(), connection, arena, &cfResult);
+        ReplyConsensusMessage_set_result(reply, cfResult);
+        ReplyConsensusMessage_set_finalized(reply, 0); 
     }
 
     // Send the reply
-    transport->SendMessage(this, remote, reply);
+    // transport->SendMessage(this, remote, reply);
+    transport->SendCFMessage(this, remote, reply, REPLY_CONSENSUS_MESSAGE);
 }
 
 void

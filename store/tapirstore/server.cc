@@ -274,7 +274,7 @@ main(int argc, char **argv)
 
     tapirstore::Server server(linearizable);
 
-    replication::ir::IRReplica replica(config, index, &transport, &server, arena);
+    replication::ir::IRReplica replica(config, index, &transport, &server, connection, arena);
 
     if (keyPath) {
         string key;

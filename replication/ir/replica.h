@@ -53,7 +53,7 @@ class IRReplica : TransportReceiver
 {
 public:
     IRReplica(transport::Configuration config, int myIdx,
-              Transport *transport, IRAppReplica *app, void* bumpArena = NULL);
+              Transport *transport, IRAppReplica *app, void* connection = NULL, void* bumpArena = NULL);
     ~IRReplica();
 
     // Message handlers.
@@ -100,6 +100,7 @@ private:
     int myIdx; // Replica index into config.
     Transport *transport;
     IRAppReplica *app;
+    void* connection;
     void* arena;
 
     ReplicaStatus status;

@@ -233,6 +233,7 @@ CFTransport::SendCFMessageInternal(TransportReceiver *src,
             Mlx5Connection_ReplyInconsistentMessage_queue_cornflakes_arena_object(connection, msg_id, conn_id, m, true);
             break;
         case REPLY_CONSENSUS_MESSAGE:
+            Mlx5Connection_ReplyConsensusMessage_queue_cornflakes_arena_object(connection, msg_id, conn_id, m, true);
             break;
         case CONFIRM_MESSAGE:
             Mlx5Connection_ConfirmMessage_queue_cornflakes_arena_object(connection, msg_id, conn_id, m, true);
