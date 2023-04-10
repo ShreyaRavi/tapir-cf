@@ -239,6 +239,7 @@ CFTransport::SendCFMessageInternal(TransportReceiver *src,
             Mlx5Connection_ConfirmMessage_queue_cornflakes_arena_object(connection, msg_id, conn_id, m, true);
             break;
         case UNLOGGED_REPLY_MESSAGE:
+            Mlx5Connection_UnloggedReplyMessage_queue_cornflakes_arena_object(connection, msg_id, conn_id, m, true);
             break;
         default:
             Panic("Message type in SendCFMessageInternal is unexpected.");

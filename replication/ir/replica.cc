@@ -432,16 +432,20 @@ void
 IRReplica::HandleUnlogged(const TransportAddress &remote,
                     const UnloggedRequestMessage &msg)
 {
-    UnloggedReplyMessage reply;
+    void* reply;
     string res;
 
     Debug("Received unlogged request %s", (char *)msg.req().op().c_str());
 
     app->UnloggedUpcall(msg.req().op(), res);
-    reply.set_reply(res);
-    reply.set_clientreqid(msg.req().clientreqid());
-    if (!(transport->SendMessage(this, remote, reply)))
-        Warning("Failed to send reply message");
+
+    UnloggedReplyMessage_new_in(arena, &reply);
+    UnloggedReplyMessage_set_clientreqid(reply, msg.req().clientreqid()); 
+    void* cfResult;
+    CFBytes_new((unsigned char*) (res.c_str()), res.length(), connection, arena, &cfResult);
+    UnloggedReplyMessage_set_reply(reply, cfResult);
+
+    transport->SendCFMessage(this, remote, reply, UNLOGGED_REPLY_MESSAGE);
 }
 
 void IRReplica::HandleViewChangeTimeout() {

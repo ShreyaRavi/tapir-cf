@@ -620,8 +620,6 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
         const unsigned char* resultPtr;
         uint64_t resultLen;
         CFBytes_unpack(result, &resultPtr, &resultLen);
-        // print this to check that it's the same? print string and explicitly wrrite the string in replica.cc
-        string cfbytesstr = string((char *)resultPtr, resultLen);
 
         uint32_t finalized;
         ReplyConsensusMessage_get_finalized(reply, &finalized);
@@ -640,6 +638,25 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
         replyProto.mutable_opid()->set_clientreqid(clientreqid);
         replyProto.set_result(resultPtr, resultLen);
         replyProto.set_finalized(finalized);
+        // maybe construct the protobuf and serialize it to string and set that to msg.
+        type = replyProto.GetTypeName();
+        msg = replyProto.SerializeAsString();
+    } else if (respType == UNLOGGED_REPLY_MESSAGE) {
+        UnloggedReplyMessage_new_in(arena, &reply);
+        // do not include msg id in size bc ptr is incremented past the msg id
+        UnloggedReplyMessage_deserialize(reply, ptr, sz - sizeof(uint32_t), 0, arena);
+        uint64_t clientreqid;
+        UnloggedReplyMessage_get_clientreqid(reply, &clientreqid);
+       
+        void* result;
+        UnloggedReplyMessage_get_reply(reply, &result);
+        const unsigned char* resultPtr;
+        uint64_t resultLen;
+        CFBytes_unpack(result, &resultPtr, &resultLen);
+
+        replication::ir::proto::UnloggedReplyMessage replyProto;
+        replyProto.set_clientreqid(clientreqid);
+        replyProto.set_result(resultPtr, resultLen);
         // maybe construct the protobuf and serialize it to string and set that to msg.
         type = replyProto.GetTypeName();
         msg = replyProto.SerializeAsString();
