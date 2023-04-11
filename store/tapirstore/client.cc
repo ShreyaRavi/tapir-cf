@@ -37,7 +37,7 @@ using namespace std;
 
 Client::Client(const string configPath, int nShards,
                 int closestReplica, TrueTime timeServer)
-    : nshards(nShards), transport(0.0, 0.0, 0, false, true), timeServer(timeServer)
+    : nshards(nShards), transport(0.0, 0.0, 0, false, false), timeServer(timeServer)
 {
     // Initialize all state here;
     client_id = 0;

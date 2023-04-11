@@ -183,6 +183,7 @@ ShardClient::Prepare(uint64_t id, const Transaction &txn,
 std::string
 ShardClient::TapirDecide(const std::map<std::string, std::size_t> &results)
 {
+
     // If a majority say prepare_ok,
     int ok_count = 0;
     Timestamp ts = 0;
@@ -283,9 +284,9 @@ void
 ShardClient::GetCallback(const string &request_str, const string &reply_str)
 {
     /* Replies back from a shard. */
-    TapirReply reply;
-    reply.ParseFromString(reply_str);
-
+    replication::Reply replicationReply;
+    replicationReply.ParseFromString(reply_str);
+    const TapirReply& reply = replicationReply.result();
     Debug("[shard %lu:%i] GET callback [%d]", client_id, shard, reply.status());
     if (waiting != NULL) {
         Promise *w = waiting;
@@ -302,11 +303,10 @@ ShardClient::GetCallback(const string &request_str, const string &reply_str)
 void
 ShardClient::PrepareCallback(const string &request_str, const string &reply_str)
 {
-    TapirReply reply;
-
-    reply.ParseFromString(reply_str);
+    replication::Reply replicationReply;
+    replicationReply.ParseFromString(reply_str);
+    const TapirReply& reply = replicationReply.result();
     Debug("[shard %lu:%i] PREPARE callback [%d]", client_id, shard, reply.status());
-
     if (waiting != NULL) {
         Promise *w = waiting;
         waiting = NULL;

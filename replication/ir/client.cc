@@ -469,6 +469,7 @@ IRClient::HandleInconsistentReply(const TransportAddress &remote,
                 Warning("Could not send finalize message to replicas");
             }
 
+
             req->continuation(req->request, "");
             req->continuationInvoked = true;
         }
