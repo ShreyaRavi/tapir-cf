@@ -48,7 +48,7 @@ Record::Record(const proto::RecordProto &record_proto) {
         request.set_clientreqid(entry_proto.opid().clientreqid());
         RecordEntryState state = static_cast<RecordEntryState>(entry_proto.state());
         RecordEntryType type = static_cast<RecordEntryType>(entry_proto.record_type());
-        const std::string& result = entry_proto.result();
+        const Reply& result = entry_proto.result();
         Add(view, opid, request, state, type, result);
     }
 }
@@ -65,13 +65,14 @@ RecordEntry &
 Record::Add(view_t view, opid_t opid, const Request &request,
             RecordEntryState state, RecordEntryType type)
 {
-    return Add(RecordEntry(view, opid, state, type, request, ""));
+    Reply reply;
+    return Add(RecordEntry(view, opid, state, type, request, reply));
 }
 
 RecordEntry &
 Record::Add(view_t view, opid_t opid, const Request &request,
             RecordEntryState state, RecordEntryType type,
-            const string &result)
+            const Reply &result)
 {
     RecordEntry &entry = Add(view, opid, request, state, type);
     entry.result = result;
@@ -105,7 +106,7 @@ Record::SetStatus(opid_t op, RecordEntryState state)
 }
 
 bool
-Record::SetResult(opid_t op, const string &result)
+Record::SetResult(opid_t op, const Reply &result)
 {
     RecordEntry *entry = Find(op);
     if (entry == NULL) {
@@ -153,7 +154,7 @@ Record::ToProto(proto::RecordProto *proto) const
         entry_proto->set_state(entry.state);
         entry_proto->set_record_type(entry.type);
         entry_proto->set_op(entry.request.op());
-        entry_proto->set_result(entry.result);
+        *entry_proto->mutable_result() = entry.result;
     }
 }
 

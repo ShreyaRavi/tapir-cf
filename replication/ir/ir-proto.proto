@@ -24,7 +24,7 @@ message RecordEntryProto {
   required uint32 state = 3;
   required uint32 record_type = 4;
   required bytes op = 5;
-  required bytes result = 6;
+  required replication.Reply result = 6;
 }
 
 // TODO: Currently, replicas send entire records to one another. Figure out if
@@ -62,7 +62,7 @@ message ReplyConsensusMessage {
     required uint64 view = 1;
     required uint32 replicaIdx = 2;
     required OpID opid = 3;
-    required bytes result = 4;
+    required replication.Reply result = 4;
     required uint32 finalized = 5;
 }
 
@@ -89,6 +89,6 @@ message UnloggedRequestMessage {
 }
 
 message UnloggedReplyMessage {
-    required bytes reply = 1;
+    required replication.Reply reply = 1;
     required uint64 clientreqid = 2;
 }

@@ -88,7 +88,7 @@ ShardClient::Get(uint64_t id, const string &key, Promise *promise)
 
     // create request
     string request_str;
-    Request request;
+    TapirRequest request;
     request.set_op(GET);
     request.set_txnid(id);
     request.mutable_get()->set_key(key);
@@ -120,7 +120,7 @@ ShardClient::Get(uint64_t id, const string &key,
 
     // create request
     string request_str;
-    Request request;
+    TapirRequest request;
     request.set_op(GET);
     request.set_txnid(id);
     request.mutable_get()->set_key(key);
@@ -161,7 +161,7 @@ ShardClient::Prepare(uint64_t id, const Transaction &txn,
 
     // create prepare request
     string request_str;
-    Request request;
+    TapirRequest request;
     request.set_op(PREPARE);
     request.set_txnid(id);
     txn.serialize(request.mutable_prepare()->mutable_txn());
@@ -187,13 +187,13 @@ ShardClient::TapirDecide(const std::map<std::string, std::size_t> &results)
     int ok_count = 0;
     Timestamp ts = 0;
     string final_reply_str;
-    Reply final_reply;
+    TapirReply final_reply;
 
     for (const auto& string_and_count : results) {
         const std::string &s = string_and_count.first;
         const std::size_t count = string_and_count.second;
 
-        Reply reply;
+        TapirReply reply;
         reply.ParseFromString(s);
 
 	if (reply.status() == REPLY_OK) {
@@ -227,7 +227,7 @@ ShardClient::Commit(uint64_t id, const Transaction &txn,
 
     // create commit request
     string request_str;
-    Request request;
+    TapirRequest request;
     request.set_op(COMMIT);
     request.set_txnid(id);
     request.mutable_commit()->set_timestamp(timestamp);
@@ -251,7 +251,7 @@ ShardClient::Abort(uint64_t id, const Transaction &txn, Promise *promise)
 
     // create abort request
     string request_str;
-    Request request;
+    TapirRequest request;
     request.set_op(ABORT);
     request.set_txnid(id);
     txn.serialize(request.mutable_abort()->mutable_txn());
@@ -283,7 +283,7 @@ void
 ShardClient::GetCallback(const string &request_str, const string &reply_str)
 {
     /* Replies back from a shard. */
-    Reply reply;
+    TapirReply reply;
     reply.ParseFromString(reply_str);
 
     Debug("[shard %lu:%i] GET callback [%d]", client_id, shard, reply.status());
@@ -302,7 +302,7 @@ ShardClient::GetCallback(const string &request_str, const string &reply_str)
 void
 ShardClient::PrepareCallback(const string &request_str, const string &reply_str)
 {
-    Reply reply;
+    TapirReply reply;
 
     reply.ParseFromString(reply_str);
     Debug("[shard %lu:%i] PREPARE callback [%d]", client_id, shard, reply.status());

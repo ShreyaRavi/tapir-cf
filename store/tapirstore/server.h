@@ -36,6 +36,7 @@
 #include "store/common/timestamp.h"
 #include "store/common/truetime.h"
 #include "store/tapirstore/store.h"
+#include "replication/common/request.pb.h"
 #include "store/tapirstore/tapir-proto.pb.h"
 
 namespace tapirstore {
@@ -53,10 +54,10 @@ public:
     void ExecInconsistentUpcall(const string &str1) override;
 
     // Invoke consensus operation
-    void ExecConsensusUpcall(const string &str1, string &str2) override;
+    void ExecConsensusUpcall(const string &str1, replication::Reply &str2) override;
 
     // Invoke unreplicated operation
-    void UnloggedUpcall(const string &str1, string &str2) override;
+    void UnloggedUpcall(const string &str1, replication::Reply &str2) override;
 
     // Sync
     void Sync(const std::map<opid_t, RecordEntry>& record) override;

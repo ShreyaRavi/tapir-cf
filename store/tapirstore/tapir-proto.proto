@@ -22,7 +22,7 @@ message AbortMessage {
      required TransactionMessage txn = 1;
 }
 
-message Request {
+message TapirRequest {
      required uint32 op = 1;
      required uint64 txnid = 2;
      optional GetMessage get = 3;
@@ -31,7 +31,7 @@ message Request {
      optional AbortMessage abort = 6;
 }
 
-message Reply {
+message TapirReply {
      // 0 = OK
      // -1 = failed
      // -2 = retry

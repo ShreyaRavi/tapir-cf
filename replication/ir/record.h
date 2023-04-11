@@ -64,9 +64,9 @@ struct RecordEntry
     RecordEntryState state;
     RecordEntryType type;
     Request request;
-    std::string result;
+    Reply result;
 
-    RecordEntry() { result = ""; }
+    RecordEntry() { result = Reply(); }
     RecordEntry(const RecordEntry &x)
         : view(x.view),
           opid(x.opid),
@@ -76,7 +76,7 @@ struct RecordEntry
           result(x.result) {}
     RecordEntry(view_t view, opid_t opid, RecordEntryState state,
                 RecordEntryType type, const Request &request,
-                const std::string &result)
+                const Reply &result)
         : view(view),
           opid(opid),
           state(state),
@@ -112,10 +112,10 @@ public:
                      RecordEntryType type);
     RecordEntry &Add(view_t view, opid_t opid, const Request &request,
                      RecordEntryState state, RecordEntryType type,
-                     const std::string &result);
+                     const Reply &result);
     RecordEntry *Find(opid_t opid);
     bool SetStatus(opid_t opid, RecordEntryState state);
-    bool SetResult(opid_t opid, const std::string &result);
+    bool SetResult(opid_t opid, const Reply &result);
     bool SetRequest(opid_t opid, const Request &req);
     void Remove(opid_t opid);
     bool Empty() const;

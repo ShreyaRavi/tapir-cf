@@ -249,7 +249,8 @@ void IRClient::HandleSlowPathConsensus(
         std::map<string, std::size_t> results;
         for (const auto &p : msgs) {
             const proto::ReplyConsensusMessage &msg = p.second;
-            results[msg.result()] += 1;
+            string resultStr = msg.SerializeAsString();
+            results[resultStr] += 1;
 
             // All messages should have the same view.
             if (view == 0) {
@@ -299,7 +300,7 @@ void IRClient::HandleFastPathConsensus(
     // if we have a super quorum of _matching_ responses.
     map<string, std::size_t> results;
     for (const auto &m : msgs) {
-        const std::string &result = m.second.result();
+        const std::string result = m.second.result().SerializeAsString();
         results[result]++;
     }
 
@@ -519,7 +520,7 @@ IRClient::HandleConsensusReply(const TransportAddress &remote,
             req->transition_to_slow_path_timer.reset();
         }
 
-        req->decideResult = msg.result();
+        req->decideResult = msg.result().SerializeAsString();
         req->reply_consensus_view = msg.view();
         HandleSlowPathConsensus(reqId, msgs, true, req);
     } else if (req->on_slow_path && msgs.size() >= req->quorumSize) {
@@ -594,7 +595,7 @@ IRClient::HandleUnloggedReply(const TransportAddress &remote,
     // remove from pending list
     pendingReqs.erase(it);
     // invoke application callback
-    req->continuation(req->request, msg.reply());
+    req->continuation(req->request, msg.reply().SerializeAsString());
     delete req;
 }
 

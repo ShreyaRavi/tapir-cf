@@ -120,7 +120,7 @@ IRReplica::HandleProposeInconsistent(const TransportAddress &remote,
     uint64_t clientid = msg.req().clientid();
     uint64_t clientreqid = msg.req().clientreqid();
 
-    Debug("%lu:%lu Received inconsistent op: %s", clientid, clientreqid, (char *)msg.req().op().c_str());
+    //Debug("%lu:%lu Received inconsistent op: %s", clientid, clientreqid, (char *)msg.req().op().c_str());
 
     opid_t opid = make_pair(clientid, clientreqid);
 
@@ -234,7 +234,7 @@ IRReplica::HandleProposeConsensus(const TransportAddress &remote,
     uint64_t clientid = msg.req().clientid();
     uint64_t clientreqid = msg.req().clientreqid();
 
-    Debug("%lu:%lu Received consensus op: %s", clientid, clientreqid, (char *)msg.req().op().c_str());
+    //Debug("%lu:%lu Received consensus op: %s", clientid, clientreqid, (char *)msg.req().op().c_str());
 
     opid_t opid = make_pair(clientid, clientreqid);
 
@@ -253,13 +253,13 @@ IRReplica::HandleProposeConsensus(const TransportAddress &remote,
             OpID_set_clientid(opid, clientid);
             OpID_set_clientreqid(opid, clientreqid);
 
-            void* cfResult;
-            CFBytes_new((unsigned char*) entry->result.c_str(), entry->result.length(), connection, arena, &cfResult);
-            ReplyConsensusMessage_set_result(reply, cfResult);
+            //void* cfResult;
+            //CFBytes_new((unsigned char*) entry->result.c_str(), entry->result.length(), connection, arena, &cfResult);
+            //ReplyConsensusMessage_set_result(reply, cfResult);
             ReplyConsensusMessage_set_finalized(reply, entry->state == RECORD_STATE_FINALIZED); 
         } else {
             // Execute op
-            string result;
+            Reply result;
 
             app->ExecConsensusUpcall(msg.req().op(), result);
 
@@ -274,9 +274,9 @@ IRReplica::HandleProposeConsensus(const TransportAddress &remote,
             OpID_set_clientid(opid, clientid);
             OpID_set_clientreqid(opid, clientreqid);
 
-            void* cfResult;
-            CFBytes_new((unsigned char*) (result.c_str()), result.length(), connection, arena, &cfResult);
-            ReplyConsensusMessage_set_result(reply, cfResult);
+            //void* cfResult;
+            //CFBytes_new((unsigned char*) (result.c_str()), result.length(), connection, arena, &cfResult);
+            //ReplyConsensusMessage_set_result(reply, cfResult);
             ReplyConsensusMessage_set_finalized(reply, 0);
         }
 
@@ -290,11 +290,11 @@ IRReplica::HandleProposeConsensus(const TransportAddress &remote,
             reply.set_replicaidx(myIdx);
             reply.mutable_opid()->set_clientid(clientid);
             reply.mutable_opid()->set_clientreqid(clientreqid);
-            reply.set_result(entry->result);
+            *reply.mutable_result() = entry->result;
             reply.set_finalized(entry->state == RECORD_STATE_FINALIZED);
         } else {
             // Execute op
-            string result;
+            Reply result;
 
             app->ExecConsensusUpcall(msg.req().op(), result);
 
@@ -307,7 +307,7 @@ IRReplica::HandleProposeConsensus(const TransportAddress &remote,
             reply.set_replicaidx(myIdx);
             reply.mutable_opid()->set_clientid(clientid);
             reply.mutable_opid()->set_clientreqid(clientreqid);
-            reply.set_result(result);
+            *reply.mutable_result() = result;
             reply.set_finalized(false);
         }
 
@@ -332,11 +332,12 @@ IRReplica::HandleFinalizeConsensus(const TransportAddress &remote,
     if (entry != NULL) {
         // Mark entry as finalized
         record.SetStatus(opid, RECORD_STATE_FINALIZED);
-
-        if (msg.result() != entry->result) {
+       
+        // TODO SHREYA GO BACK AND PUT BACK IN
+        //if (msg.result() != entry->result) {
             // Update the result
-            entry->result = msg.result();
-        }
+        //    entry->result = msg.result();
+        //}
 
         if (useCornflakes) {
              // Send the reply
@@ -504,9 +505,9 @@ void
 IRReplica::HandleUnlogged(const TransportAddress &remote,
                     const UnloggedRequestMessage &msg)
 {
-    string res;
+    Reply res;
 
-    Debug("Received unlogged request %s", (char *)msg.req().op().c_str());
+    //Debug("Received unlogged request %s", (char *)msg.req().op().c_str());
 
     app->UnloggedUpcall(msg.req().op(), res);
 
@@ -514,14 +515,14 @@ IRReplica::HandleUnlogged(const TransportAddress &remote,
         void* reply;
         UnloggedReplyMessage_new_in(arena, &reply);
         UnloggedReplyMessage_set_clientreqid(reply, msg.req().clientreqid()); 
-        void* cfResult;
-        CFBytes_new((unsigned char*) (res.c_str()), res.length(), connection, arena, &cfResult);
-        UnloggedReplyMessage_set_reply(reply, cfResult);
+        //void* cfResult;
+        //CFBytes_new((unsigned char*) (res.c_str()), res.length(), connection, arena, &cfResult);
+        //UnloggedReplyMessage_set_reply(reply, cfResult);
 
         transport->SendCFMessage(this, remote, reply, UNLOGGED_REPLY_MESSAGE);
     } else {
         UnloggedReplyMessage reply;
-        reply.set_reply(res);
+        *reply.mutable_reply() = res;
         reply.set_clientreqid(msg.req().clientreqid());
         if (!(transport->SendMessage(this, remote, reply))) {
             Warning("Failed to send reply message");
@@ -667,9 +668,9 @@ IRReplica::IrMergeRecords(const std::map<int, DoViewChangeMessage>& records) {
 
         // Count the frequency of each response.
         std::map<std::string, std::size_t> result_counts;
-        for (const RecordEntry& entry : entries) {
-            result_counts[entry.result] += 1;
-        }
+        //for (const RecordEntry& entry : entries) {
+        //    result_counts[entry.result] += 1;
+        //}
 
         // Check if any response occurs ceil(f/2) + 1 times or more.
         bool in_d = false;
@@ -717,8 +718,8 @@ IRReplica::IrMergeRecords(const std::map<int, DoViewChangeMessage>& records) {
         const RecordEntry &entry = entries[0];
 
         // TODO: Is this view correct?
-        merged.Add(view, opid, entry.request, RECORD_STATE_FINALIZED,
-                   entry.type, std::move(result));
+        //merged.Add(view, opid, entry.request, RECORD_STATE_FINALIZED,
+        //           entry.type, std::move(result));
     }
 
     // R = R cup merged.

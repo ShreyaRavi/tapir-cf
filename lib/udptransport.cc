@@ -551,7 +551,7 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
  
     MessageType respType = respTypeMap[msgId];
     respTypeMap.erase(msgId);
-
+    /*
     if (useCornflakes) {
         void* reply;
         if (respType == REPLY_INCONSISTENT_MESSAGE) {
@@ -664,6 +664,7 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
             msg = replyProto.SerializeAsString();
         }
     } else {
+    */
         int msg_type = *((int *)ptr);
         ptr += sizeof(int);
 
@@ -687,7 +688,7 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
     
         msg = string(ptr, msgLen);
         ptr += msgLen;
-    }
+   /* } */
 }
 
 void

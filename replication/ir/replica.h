@@ -19,6 +19,7 @@
 #include "lib/cftransport.h"
 #include "replication/common/quorumset.h"
 #include "replication/common/replica.h"
+#include "replication/common/request.pb.h"
 #include "replication/ir/ir-proto.pb.h"
 #include "replication/ir/record.h"
 
@@ -34,9 +35,9 @@ public:
     // Invoke inconsistent operation, no return value
     virtual void ExecInconsistentUpcall(const string &str1) { };
     // Invoke consensus operation
-    virtual void ExecConsensusUpcall(const string &str1, string &str2) { };
+    virtual void ExecConsensusUpcall(const string &str1, Reply &str2) { };
     // Invoke unreplicated operation
-    virtual void UnloggedUpcall(const string &str1, string &str2) { };
+    virtual void UnloggedUpcall(const string &str1, Reply &str2) { };
     // Sync
     virtual void Sync(const std::map<opid_t, RecordEntry>& record) { };
     // Merge

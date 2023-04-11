@@ -1,4 +1,5 @@
 syntax = "proto2";
+import "store/tapirstore/tapir-proto.proto";
 
 package replication;
 
@@ -13,4 +14,8 @@ message UnloggedRequest {
      required bytes op = 1;
      required uint64 clientid = 2;
      required uint64 clientreqid = 3;
+}
+
+message Reply {
+     required tapirstore.proto.TapirReply result = 1;
 }

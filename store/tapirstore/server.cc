@@ -52,7 +52,7 @@ Server::ExecInconsistentUpcall(const string &str1)
 {
     Debug("Received Inconsistent Request: %s",  str1.c_str());
 
-    Request request;
+    TapirRequest request;
 
     request.ParseFromString(str1);
     Operation op = static_cast<Operation>(request.op());
@@ -69,12 +69,12 @@ Server::ExecInconsistentUpcall(const string &str1)
 }
 
 void
-Server::ExecConsensusUpcall(const string &str1, string &str2)
+Server::ExecConsensusUpcall(const string &str1, replication::Reply &str2)
 {
     Debug("Received Consensus Request: %s", str1.c_str());
 
-    Request request;
-    Reply reply;
+    TapirRequest request;
+    TapirReply reply;
     int status;
     Timestamp proposed;
 
@@ -90,7 +90,7 @@ Server::ExecConsensusUpcall(const string &str1, string &str2)
         if (proposed.isValid()) {
             proposed.serialize(reply.mutable_timestamp());
         }
-        reply.SerializeToString(&str2);
+        *str2.mutable_result() = reply;
         break;
     default:
         Panic("Unrecognized consensus operation.");
@@ -99,12 +99,12 @@ Server::ExecConsensusUpcall(const string &str1, string &str2)
 }
 
 void
-Server::UnloggedUpcall(const string &str1, string &str2)
+Server::UnloggedUpcall(const string &str1, replication::Reply &str2)
 {
     Debug("Received Consensus Request: %s", str1.c_str());
 
-    Request request;
-    Reply reply;
+    TapirRequest request;
+    TapirReply reply;
     int status;
 
     request.ParseFromString(str1);
@@ -127,7 +127,7 @@ Server::UnloggedUpcall(const string &str1, string &str2)
             }
         }
         reply.set_status(status);
-        reply.SerializeToString(&str2);
+        *str2.mutable_result() = reply;
         break;
     default:
         Panic("Unrecognized Unlogged request.");
