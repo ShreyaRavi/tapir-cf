@@ -19,7 +19,8 @@ using namespace std;
 using namespace proto;
 
 IRReplica::IRReplica(transport::Configuration config, int myIdx,
-                     Transport *transport, IRAppReplica *app, void* connection, void* bumpArena)
+                     Transport *transport, IRAppReplica *app, void* connection, 
+                     void* bumpArena, bool useCornflakes)
     : config(std::move(config)), myIdx(myIdx), transport(transport), app(app),
       status(STATUS_NORMAL), view(0), latest_normal_view(0),
       // TODO: Take these filenames in via the command line?
@@ -28,7 +29,8 @@ IRReplica::IRReplica(transport::Configuration config, int myIdx,
                            std::to_string(myIdx) + ".bin"),
       // Note that a leader waits for DO-VIEW-CHANGE messages from f other
       // replicas (as opposed to f + 1) for a total of f + 1 replicas.
-      do_view_change_quorum(config.f), arena(bumpArena), connection(connection)
+      do_view_change_quorum(config.f), arena(bumpArena), connection(connection),
+      useCornflakes(useCornflakes)
 {
     transport->Register(this, config, myIdx);
 
@@ -124,38 +126,60 @@ IRReplica::HandleProposeInconsistent(const TransportAddress &remote,
 
     // Check record if we've already handled this request
     RecordEntry *entry = record.Find(opid);
-    //ReplyInconsistentMessage reply;
-    void* reply;
-    ReplyInconsistentMessage_new_in(arena, &reply); 
-    if (entry != NULL) {
-        // If we already have this op in our record, then just return it
-        ReplyInconsistentMessage_set_view(reply, entry->view); 
-        ReplyInconsistentMessage_set_replicaIdx(reply, myIdx);
-        void* opid;
-        ReplyInconsistentMessage_get_mut_opid(reply, &opid);
-        OpID_set_clientid(opid, clientid);
-        OpID_set_clientreqid(opid, clientreqid);
-        ReplyInconsistentMessage_set_finalized(reply, entry->state == RECORD_STATE_FINALIZED);    
 
+    if (useCornflakes) {
+        void* reply;
+        ReplyInconsistentMessage_new_in(arena, &reply); 
+        if (entry != NULL) {
+            // If we already have this op in our record, then just return it
+            ReplyInconsistentMessage_set_view(reply, entry->view); 
+            ReplyInconsistentMessage_set_replicaIdx(reply, myIdx);
+            void* opid;
+            ReplyInconsistentMessage_get_mut_opid(reply, &opid);
+            OpID_set_clientid(opid, clientid);
+            OpID_set_clientreqid(opid, clientreqid);
+            ReplyInconsistentMessage_set_finalized(reply, entry->state == RECORD_STATE_FINALIZED);    
+
+        } else {
+            // Otherwise, put it in our record as tentative
+            record.Add(view, opid, msg.req(), RECORD_STATE_TENTATIVE,
+                    RECORD_TYPE_INCONSISTENT);
+
+            // 3. Return Reply
+            ReplyInconsistentMessage_set_view(reply, view); 
+            ReplyInconsistentMessage_set_replicaIdx(reply, myIdx);
+            void* opid;
+            ReplyInconsistentMessage_get_mut_opid(reply, &opid);
+            OpID_set_clientid(opid, clientid);
+            OpID_set_clientreqid(opid, clientreqid);
+            ReplyInconsistentMessage_set_finalized(reply, 0);  
+        }
+        // Send the reply
+        // NOTE: CORNFLAKES
+        transport->SendCFMessage(this, remote, reply, REPLY_INCONSISTENT_MESSAGE);
     } else {
-        // Otherwise, put it in our record as tentative
-        record.Add(view, opid, msg.req(), RECORD_STATE_TENTATIVE,
-                   RECORD_TYPE_INCONSISTENT);
+        ReplyInconsistentMessage reply;
+        if (entry != NULL) {
+            // If we already have this op in our record, then just return it
+            reply.set_view(entry->view);
+            reply.set_replicaidx(myIdx);
+            reply.mutable_opid()->set_clientid(clientid);
+            reply.mutable_opid()->set_clientreqid(clientreqid);
+            reply.set_finalized(entry->state == RECORD_STATE_FINALIZED);
+        } else {
+            // Otherwise, put it in our record as tentative
+            record.Add(view, opid, msg.req(), RECORD_STATE_TENTATIVE,
+                    RECORD_TYPE_INCONSISTENT);
 
-        // 3. Return Reply
-        ReplyInconsistentMessage_set_view(reply, view); 
-        ReplyInconsistentMessage_set_replicaIdx(reply, myIdx);
-        void* opid;
-        ReplyInconsistentMessage_get_mut_opid(reply, &opid);
-        OpID_set_clientid(opid, clientid);
-        OpID_set_clientreqid(opid, clientreqid);
-        ReplyInconsistentMessage_set_finalized(reply, 0);  
+            // 3. Return Reply
+            reply.set_view(view);
+            reply.set_replicaidx(myIdx);
+            reply.mutable_opid()->set_clientid(clientid);
+            reply.mutable_opid()->set_clientreqid(clientreqid);
+            reply.set_finalized(false);
+        }
+        transport->SendMessage(this, remote, reply);
     }
-
-    // Send the reply
-    // NOTE: CORNFLAKES
-    transport->SendCFMessage(this, remote, reply, REPLY_INCONSISTENT_MESSAGE);
-    //transport->SendMessage(this, remote, reply);
 
 }
 
@@ -179,15 +203,25 @@ IRReplica::HandleFinalizeInconsistent(const TransportAddress &remote,
         // Execute the operation
         app->ExecInconsistentUpcall(entry->request.op());
 
-        void* reply;
-        ConfirmMessage_new_in(arena, &reply); 
-        ConfirmMessage_set_view(reply, view); 
-        ConfirmMessage_set_replicaIdx(reply, myIdx);
-        void* opid;
-        ConfirmMessage_get_mut_opid(reply, &opid);
-        OpID_set_clientid(opid, msg.opid().clientid());
-        OpID_set_clientreqid(opid, msg.opid().clientreqid());
-        transport->SendCFMessage(this, remote, reply, CONFIRM_MESSAGE);
+        if (useCornflakes) {
+            void* reply;
+            ConfirmMessage_new_in(arena, &reply); 
+            ConfirmMessage_set_view(reply, view); 
+            ConfirmMessage_set_replicaIdx(reply, myIdx);
+            void* opid;
+            ConfirmMessage_get_mut_opid(reply, &opid);
+            OpID_set_clientid(opid, msg.opid().clientid());
+            OpID_set_clientreqid(opid, msg.opid().clientreqid());
+            transport->SendCFMessage(this, remote, reply, CONFIRM_MESSAGE);
+        } else {
+            // Send the reply
+            ConfirmMessage reply;
+            reply.set_view(view);
+            reply.set_replicaidx(myIdx);
+            *reply.mutable_opid() = msg.opid();
+
+            transport->SendMessage(this, remote, reply);
+        }
     } else {
         // Ignore?
     }
@@ -208,52 +242,78 @@ IRReplica::HandleProposeConsensus(const TransportAddress &remote,
     RecordEntry *entry = record.Find(opid);
     // ReplyConsensusMessage reply;
     void* reply;
-    ReplyConsensusMessage_new_in(arena, &reply);  
-    if (entry != NULL) {
-        // If we already have this op in our record, then just return it
-        // reply.set_view(entry->view);
-        // reply.set_replicaidx(myIdx);
-        // reply.mutable_opid()->set_clientid(clientid);
-        // reply.mutable_opid()->set_clientreqid(clientreqid);
-        // reply.set_result(entry->result);
-        // reply.set_finalized(entry->state == RECORD_STATE_FINALIZED);
-        ReplyConsensusMessage_set_view(reply, entry->view); 
-        ReplyConsensusMessage_set_replicaIdx(reply, myIdx);
-        void* opid;
-        ReplyConsensusMessage_get_mut_opid(reply, &opid);
-        OpID_set_clientid(opid, clientid);
-        OpID_set_clientreqid(opid, clientreqid);
 
-        void* cfResult;
-        CFBytes_new((unsigned char*) entry->result.c_str(), entry->result.length(), connection, arena, &cfResult);
-        ReplyConsensusMessage_set_result(reply, cfResult);
-        ReplyConsensusMessage_set_finalized(reply, entry->state == RECORD_STATE_FINALIZED); 
+    if (useCornflakes) {
+        ReplyConsensusMessage_new_in(arena, &reply);  
+        if (entry != NULL) {
+            ReplyConsensusMessage_set_view(reply, entry->view); 
+            ReplyConsensusMessage_set_replicaIdx(reply, myIdx);
+            void* opid;
+            ReplyConsensusMessage_get_mut_opid(reply, &opid);
+            OpID_set_clientid(opid, clientid);
+            OpID_set_clientreqid(opid, clientreqid);
+
+            void* cfResult;
+            CFBytes_new((unsigned char*) entry->result.c_str(), entry->result.length(), connection, arena, &cfResult);
+            ReplyConsensusMessage_set_result(reply, cfResult);
+            ReplyConsensusMessage_set_finalized(reply, entry->state == RECORD_STATE_FINALIZED); 
+        } else {
+            // Execute op
+            string result;
+
+            app->ExecConsensusUpcall(msg.req().op(), result);
+
+            // Put it in our record as tentative
+            record.Add(view, opid, msg.req(), RECORD_STATE_TENTATIVE,
+                    RECORD_TYPE_CONSENSUS, result);
+            // 3. Return Reply
+            ReplyConsensusMessage_set_view(reply, view); 
+            ReplyConsensusMessage_set_replicaIdx(reply, myIdx);
+            void* opid;
+            ReplyConsensusMessage_get_mut_opid(reply, &opid);
+            OpID_set_clientid(opid, clientid);
+            OpID_set_clientreqid(opid, clientreqid);
+
+            void* cfResult;
+            CFBytes_new((unsigned char*) (result.c_str()), result.length(), connection, arena, &cfResult);
+            ReplyConsensusMessage_set_result(reply, cfResult);
+            ReplyConsensusMessage_set_finalized(reply, 0);
+        }
+
+        // Send the reply
+        transport->SendCFMessage(this, remote, reply, REPLY_CONSENSUS_MESSAGE);
     } else {
-        // Execute op
-        string result;
+        ReplyConsensusMessage reply;
+        if (entry != NULL) {
+            // If we already have this op in our record, then just return it
+            reply.set_view(entry->view);
+            reply.set_replicaidx(myIdx);
+            reply.mutable_opid()->set_clientid(clientid);
+            reply.mutable_opid()->set_clientreqid(clientreqid);
+            reply.set_result(entry->result);
+            reply.set_finalized(entry->state == RECORD_STATE_FINALIZED);
+        } else {
+            // Execute op
+            string result;
 
-        app->ExecConsensusUpcall(msg.req().op(), result);
+            app->ExecConsensusUpcall(msg.req().op(), result);
 
-        // Put it in our record as tentative
-        record.Add(view, opid, msg.req(), RECORD_STATE_TENTATIVE,
-                   RECORD_TYPE_CONSENSUS, result);
-        // 3. Return Reply
-        ReplyConsensusMessage_set_view(reply, view); 
-        ReplyConsensusMessage_set_replicaIdx(reply, myIdx);
-        void* opid;
-        ReplyConsensusMessage_get_mut_opid(reply, &opid);
-        OpID_set_clientid(opid, clientid);
-        OpID_set_clientreqid(opid, clientreqid);
+            // Put it in our record as tentative
+            record.Add(view, opid, msg.req(), RECORD_STATE_TENTATIVE,
+                    RECORD_TYPE_CONSENSUS, result);
 
-        void* cfResult;
-        CFBytes_new((unsigned char*) (result.c_str()), result.length(), connection, arena, &cfResult);
-        ReplyConsensusMessage_set_result(reply, cfResult);
-        ReplyConsensusMessage_set_finalized(reply, 0);
+            // 3. Return Reply
+            reply.set_view(view);
+            reply.set_replicaidx(myIdx);
+            reply.mutable_opid()->set_clientid(clientid);
+            reply.mutable_opid()->set_clientreqid(clientreqid);
+            reply.set_result(result);
+            reply.set_finalized(false);
+        }
+
+        // Send the reply
+        transport->SendMessage(this, remote, reply);
     }
-
-    // Send the reply
-    // transport->SendMessage(this, remote, reply);
-    transport->SendCFMessage(this, remote, reply, REPLY_CONSENSUS_MESSAGE);
 }
 
 void
@@ -278,16 +338,28 @@ IRReplica::HandleFinalizeConsensus(const TransportAddress &remote,
             entry->result = msg.result();
         }
 
-        // Send the reply
-        void* reply;
-        ConfirmMessage_new_in(arena, &reply); 
-        ConfirmMessage_set_view(reply, view); 
-        ConfirmMessage_set_replicaIdx(reply, myIdx);
-        void* opid;
-        ConfirmMessage_get_mut_opid(reply, &opid);
-        OpID_set_clientid(opid, msg.opid().clientid());
-        OpID_set_clientreqid(opid, msg.opid().clientreqid());
-        transport->SendCFMessage(this, remote, reply, CONFIRM_MESSAGE);
+        if (useCornflakes) {
+             // Send the reply
+            void* reply;
+            ConfirmMessage_new_in(arena, &reply); 
+            ConfirmMessage_set_view(reply, view); 
+            ConfirmMessage_set_replicaIdx(reply, myIdx);
+            void* opid;
+            ConfirmMessage_get_mut_opid(reply, &opid);
+            OpID_set_clientid(opid, msg.opid().clientid());
+            OpID_set_clientreqid(opid, msg.opid().clientreqid());
+            transport->SendCFMessage(this, remote, reply, CONFIRM_MESSAGE);
+        } else {
+            // Send the reply
+            ConfirmMessage reply;
+            reply.set_view(view);
+            reply.set_replicaidx(myIdx);
+            *reply.mutable_opid() = msg.opid();
+
+            if (!transport->SendMessage(this, remote, reply)) {
+                Warning("Failed to send reply message");
+            }
+        }
     } else {
         // Ignore?
         Warning("Finalize request for unknown consensus operation");
@@ -432,20 +504,28 @@ void
 IRReplica::HandleUnlogged(const TransportAddress &remote,
                     const UnloggedRequestMessage &msg)
 {
-    void* reply;
     string res;
 
     Debug("Received unlogged request %s", (char *)msg.req().op().c_str());
 
     app->UnloggedUpcall(msg.req().op(), res);
 
-    UnloggedReplyMessage_new_in(arena, &reply);
-    UnloggedReplyMessage_set_clientreqid(reply, msg.req().clientreqid()); 
-    void* cfResult;
-    CFBytes_new((unsigned char*) (res.c_str()), res.length(), connection, arena, &cfResult);
-    UnloggedReplyMessage_set_reply(reply, cfResult);
+    if (useCornflakes) {
+        void* reply;
+        UnloggedReplyMessage_new_in(arena, &reply);
+        UnloggedReplyMessage_set_clientreqid(reply, msg.req().clientreqid()); 
+        void* cfResult;
+        CFBytes_new((unsigned char*) (res.c_str()), res.length(), connection, arena, &cfResult);
+        UnloggedReplyMessage_set_reply(reply, cfResult);
 
-    transport->SendCFMessage(this, remote, reply, UNLOGGED_REPLY_MESSAGE);
+        transport->SendCFMessage(this, remote, reply, UNLOGGED_REPLY_MESSAGE);
+    } else {
+        UnloggedReplyMessage reply;
+        reply.set_reply(res);
+        reply.set_clientreqid(msg.req().clientreqid());
+        if (!(transport->SendMessage(this, remote, reply))) {
+            Warning("Failed to send reply message");
+        }
 }
 
 void IRReplica::HandleViewChangeTimeout() {

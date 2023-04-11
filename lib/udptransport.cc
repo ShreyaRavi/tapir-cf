@@ -183,7 +183,7 @@ BindToPort(int fd, const string &host, const string &port)
 
 UDPTransport::UDPTransport(double dropRate, double reorderRate,
         int dscp, bool handleSignals)
-    : dropRate(dropRate), reorderRate(reorderRate), dscp(dscp)
+    : dropRate(dropRate), reorderRate(reorderRate), dscp(dscp), useCornflakes(useCornflakes)
 {
 
     arena = Bump_with_capacity(
@@ -551,128 +551,128 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
  
     MessageType respType = respTypeMap[msgId];
     respTypeMap.erase(msgId);
-    void* reply;
-    if (respType == REPLY_INCONSISTENT_MESSAGE) {
-        ReplyInconsistentMessage_new_in(arena, &reply);
-        // do not include msg id in size bc ptr is incremented past the msg id
-        ReplyInconsistentMessage_deserialize(reply, ptr, sz - sizeof(uint32_t), 0, arena);
-        uint64_t view;
-        ReplyInconsistentMessage_get_view(reply, &view);
-        uint32_t replicaIdx;
-        ReplyInconsistentMessage_get_replicaIdx(reply, &replicaIdx);
-        uint32_t finalized;
-        ReplyInconsistentMessage_get_finalized(reply, &finalized);
+
+    if (useCornflakes) {
+        void* reply;
+        if (respType == REPLY_INCONSISTENT_MESSAGE) {
+            ReplyInconsistentMessage_new_in(arena, &reply);
+            // do not include msg id in size bc ptr is incremented past the msg id
+            ReplyInconsistentMessage_deserialize(reply, ptr, sz - sizeof(uint32_t), 0, arena);
+            uint64_t view;
+            ReplyInconsistentMessage_get_view(reply, &view);
+            uint32_t replicaIdx;
+            ReplyInconsistentMessage_get_replicaIdx(reply, &replicaIdx);
+            uint32_t finalized;
+            ReplyInconsistentMessage_get_finalized(reply, &finalized);
+            
+            void* opid;
+            ReplyInconsistentMessage_get_mut_opid(reply, &opid);
+            
+            uint64_t clientid;
+            OpID_get_clientid(opid, &clientid);
+
+            uint64_t clientreqid;
+            OpID_get_clientreqid(opid, &clientreqid);
+
+            replication::ir::proto::ReplyInconsistentMessage replyProto;
+            replyProto.set_view(view);
+            replyProto.set_replicaidx(replicaIdx);
+            replyProto.mutable_opid()->set_clientid(clientid);
+            replyProto.mutable_opid()->set_clientreqid(clientreqid);
+            replyProto.set_finalized(finalized);
+            // maybe construct the protobuf and serialize it to string and set that to msg.
+            type = replyProto.GetTypeName();
+            msg = replyProto.SerializeAsString();
+        } else if (respType == CONFIRM_MESSAGE) {
+            ConfirmMessage_new_in(arena, &reply);
+            // do not include msg id in size bc ptr is incremented past the msg id
+            ConfirmMessage_deserialize(reply, ptr, sz - sizeof(uint32_t), 0, arena);
+            uint64_t view;
+            ConfirmMessage_get_view(reply, &view);
+            uint32_t replicaIdx;
+            ConfirmMessage_get_replicaIdx(reply, &replicaIdx);
+            
+            void* opid;
+            ConfirmMessage_get_mut_opid(reply, &opid);
+            
+            uint64_t clientid;
+            OpID_get_clientid(opid, &clientid);
+            uint64_t clientreqid;
+            OpID_get_clientreqid(opid, &clientreqid);
+
+            replication::ir::proto::ConfirmMessage replyProto;
+            replyProto.set_view(view);
+            replyProto.set_replicaidx(replicaIdx);
+            replyProto.mutable_opid()->set_clientid(clientid);
+            replyProto.mutable_opid()->set_clientreqid(clientreqid);
+            // maybe construct the protobuf and serialize it to string and set that to msg.
+            type = replyProto.GetTypeName();
+            msg = replyProto.SerializeAsString();
+        } else if (respType == REPLY_CONSENSUS_MESSAGE) {
+            ReplyConsensusMessage_new_in(arena, &reply);
+            // do not include msg id in size bc ptr is incremented past the msg id
+            ReplyConsensusMessage_deserialize(reply, ptr, sz - sizeof(uint32_t), 0, arena);
+            uint64_t view;
+            ReplyConsensusMessage_get_view(reply, &view);
+            uint32_t replicaIdx;
+            ReplyConsensusMessage_get_replicaIdx(reply, &replicaIdx);
+
+            void* result;
+            ReplyConsensusMessage_get_result(reply, &result);
+            const unsigned char* resultPtr;
+            uint64_t resultLen;
+            CFBytes_unpack(result, &resultPtr, &resultLen);
+
+            uint32_t finalized;
+            ReplyConsensusMessage_get_finalized(reply, &finalized);
+            void* opid;
+            ReplyConsensusMessage_get_mut_opid(reply, &opid);
+            
+            uint64_t clientid;
+            OpID_get_clientid(opid, &clientid);
+            uint64_t clientreqid;
+            OpID_get_clientreqid(opid, &clientreqid);
+
+            replication::ir::proto::ReplyConsensusMessage replyProto;
+            replyProto.set_view(view);
+            replyProto.set_replicaidx(replicaIdx);
+            replyProto.mutable_opid()->set_clientid(clientid);
+            replyProto.mutable_opid()->set_clientreqid(clientreqid);
+            replyProto.set_result(resultPtr, resultLen);
+            replyProto.set_finalized(finalized);
+            // maybe construct the protobuf and serialize it to string and set that to msg.
+            type = replyProto.GetTypeName();
+            msg = replyProto.SerializeAsString();
+        } else if (respType == UNLOGGED_REPLY_MESSAGE) {
+            UnloggedReplyMessage_new_in(arena, &reply);
+            // do not include msg id in size bc ptr is incremented past the msg id
+            UnloggedReplyMessage_deserialize(reply, ptr, sz - sizeof(uint32_t), 0, arena);
+            uint64_t clientreqid;
+            UnloggedReplyMessage_get_clientreqid(reply, &clientreqid);
         
-        void* opid;
-        ReplyInconsistentMessage_get_mut_opid(reply, &opid);
-        
-        uint64_t clientid;
-        OpID_get_clientid(opid, &clientid);
+            void* result;
+            UnloggedReplyMessage_get_reply(reply, &result);
+            const unsigned char* resultPtr;
+            uint64_t resultLen;
+            CFBytes_unpack(result, &resultPtr, &resultLen);
 
-        uint64_t clientreqid;
-        OpID_get_clientreqid(opid, &clientreqid);
-
-        replication::ir::proto::ReplyInconsistentMessage replyProto;
-        replyProto.set_view(view);
-        replyProto.set_replicaidx(replicaIdx);
-        replyProto.mutable_opid()->set_clientid(clientid);
-        replyProto.mutable_opid()->set_clientreqid(clientreqid);
-        replyProto.set_finalized(finalized);
-        // maybe construct the protobuf and serialize it to string and set that to msg.
-        type = replyProto.GetTypeName();
-        msg = replyProto.SerializeAsString();
-    } else if (respType == CONFIRM_MESSAGE) {
-        ConfirmMessage_new_in(arena, &reply);
-        // do not include msg id in size bc ptr is incremented past the msg id
-        ConfirmMessage_deserialize(reply, ptr, sz - sizeof(uint32_t), 0, arena);
-        uint64_t view;
-        ConfirmMessage_get_view(reply, &view);
-        uint32_t replicaIdx;
-        ConfirmMessage_get_replicaIdx(reply, &replicaIdx);
-        
-        void* opid;
-        ConfirmMessage_get_mut_opid(reply, &opid);
-        
-        uint64_t clientid;
-        OpID_get_clientid(opid, &clientid);
-        uint64_t clientreqid;
-        OpID_get_clientreqid(opid, &clientreqid);
-
-        replication::ir::proto::ConfirmMessage replyProto;
-        replyProto.set_view(view);
-        replyProto.set_replicaidx(replicaIdx);
-        replyProto.mutable_opid()->set_clientid(clientid);
-        replyProto.mutable_opid()->set_clientreqid(clientreqid);
-        // maybe construct the protobuf and serialize it to string and set that to msg.
-        type = replyProto.GetTypeName();
-        msg = replyProto.SerializeAsString();
-    } else if (respType == REPLY_CONSENSUS_MESSAGE) {
-        ReplyConsensusMessage_new_in(arena, &reply);
-        // do not include msg id in size bc ptr is incremented past the msg id
-        ReplyConsensusMessage_deserialize(reply, ptr, sz - sizeof(uint32_t), 0, arena);
-        uint64_t view;
-        ReplyConsensusMessage_get_view(reply, &view);
-        uint32_t replicaIdx;
-        ReplyConsensusMessage_get_replicaIdx(reply, &replicaIdx);
-
-        void* result;
-        ReplyConsensusMessage_get_result(reply, &result);
-        const unsigned char* resultPtr;
-        uint64_t resultLen;
-        CFBytes_unpack(result, &resultPtr, &resultLen);
-
-        uint32_t finalized;
-        ReplyConsensusMessage_get_finalized(reply, &finalized);
-        void* opid;
-        ReplyConsensusMessage_get_mut_opid(reply, &opid);
-        
-        uint64_t clientid;
-        OpID_get_clientid(opid, &clientid);
-        uint64_t clientreqid;
-        OpID_get_clientreqid(opid, &clientreqid);
-
-        replication::ir::proto::ReplyConsensusMessage replyProto;
-        replyProto.set_view(view);
-        replyProto.set_replicaidx(replicaIdx);
-        replyProto.mutable_opid()->set_clientid(clientid);
-        replyProto.mutable_opid()->set_clientreqid(clientreqid);
-        replyProto.set_result(resultPtr, resultLen);
-        replyProto.set_finalized(finalized);
-        // maybe construct the protobuf and serialize it to string and set that to msg.
-        type = replyProto.GetTypeName();
-        msg = replyProto.SerializeAsString();
-    } else if (respType == UNLOGGED_REPLY_MESSAGE) {
-        UnloggedReplyMessage_new_in(arena, &reply);
-        // do not include msg id in size bc ptr is incremented past the msg id
-        UnloggedReplyMessage_deserialize(reply, ptr, sz - sizeof(uint32_t), 0, arena);
-        uint64_t clientreqid;
-        UnloggedReplyMessage_get_clientreqid(reply, &clientreqid);
-       
-        void* result;
-        UnloggedReplyMessage_get_reply(reply, &result);
-        const unsigned char* resultPtr;
-        uint64_t resultLen;
-        CFBytes_unpack(result, &resultPtr, &resultLen);
-
-        replication::ir::proto::UnloggedReplyMessage replyProto;
-        replyProto.set_clientreqid(clientreqid);
-        replyProto.set_reply(resultPtr, resultLen);
-        // maybe construct the protobuf and serialize it to string and set that to msg.
-        type = replyProto.GetTypeName();
-        msg = replyProto.SerializeAsString();
+            replication::ir::proto::UnloggedReplyMessage replyProto;
+            replyProto.set_clientreqid(clientreqid);
+            replyProto.set_reply(resultPtr, resultLen);
+            // maybe construct the protobuf and serialize it to string and set that to msg.
+            type = replyProto.GetTypeName();
+            msg = replyProto.SerializeAsString();
+        }
     } else {
         int msg_type = *((int *)ptr);
         ptr += sizeof(int);
-        if (msg_type == FINALIZE_INCONSISTENT_MESSAGE) {
-            type = "replication.ir.proto.FinalizeInconsistentMessage";
-        } else if (msg_type == PROPOSE_INCONSISTENT_MESSAGE) {
-            type = "replication.ir.proto.ProposeInconsistentMessage";
-        } else if (msg_type == FINALIZE_CONSENSUS_MESSAGE) {
-            type = "replication.ir.proto.FinalizeConsensusMessage";
-        } else if (msg_type == PROPOSE_CONSENSUS_MESSAGE) {
-            type = "replication.ir.proto.ProposeConsensusMessage";
-        } else if (msg_type == UNLOGGED_REQUEST_MESSAGE) {
-            type = "replication.ir.proto.UnloggedRequestMessage";
+
+        if (msg_type == REPLY_INCONSISTENT_MESSAGE) {
+            type = "replication.ir.proto.ReplyInconsistentMessage";
+        } else if (msg_type == REPLY_CONSENSUS_MESSAGE) {
+            type = "replication.ir.proto.ReplyConsensusMessage";
+        } else if (msg_type == CONFIRM_MESSAGE) {
+            type = "replication.ir.proto.ConfirmMessage";
         } else if (msg_type == UNLOGGED_REPLY_MESSAGE) {
             type = "replication.ir.proto.UnloggedReplyMessage";
         } else {

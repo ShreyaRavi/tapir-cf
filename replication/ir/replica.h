@@ -53,7 +53,8 @@ class IRReplica : TransportReceiver
 {
 public:
     IRReplica(transport::Configuration config, int myIdx,
-              Transport *transport, IRAppReplica *app, void* connection = NULL, void* bumpArena = NULL);
+              Transport *transport, IRAppReplica *app, void* connection = NULL,
+              void* bumpArena = NULL, bool useCornflakes = true);
     ~IRReplica();
 
     // Message handlers.
@@ -124,6 +125,7 @@ private:
 
     void* arena;
     void* connection;
+    bool useCornflakes;
 };
 
 } // namespace ir

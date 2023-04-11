@@ -270,11 +270,12 @@ main(int argc, char **argv)
             1024, // max_packet_size
             64   // max_entries
         );
+    bool useCornflakes = true;
     CFTransport transport(connection, arena);
 
     tapirstore::Server server(linearizable);
 
-    replication::ir::IRReplica replica(config, index, &transport, &server, connection, arena);
+    replication::ir::IRReplica replica(config, index, &transport, &server, connection, arena, useCornflakes);
 
     if (keyPath) {
         string key;

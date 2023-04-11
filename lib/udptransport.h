@@ -66,7 +66,7 @@ class UDPTransport : public TransportCommon<UDPTransportAddress>
 {
 public:
     UDPTransport(double dropRate = 0.0, double reorderRate = 0.0,
-                    int dscp = 0, bool handleSignals = true);
+                    int dscp = 0, bool handleSignals = true, bool useCornflakes = false);
     virtual ~UDPTransport();
     void Register(TransportReceiver *receiver,
                   const transport::Configuration &config,
@@ -88,6 +88,7 @@ private:
     };
 
     void* arena;
+    bool useCornflakes;
 
     std::unordered_map<uint32_t, MessageType> msgRespType;
 
