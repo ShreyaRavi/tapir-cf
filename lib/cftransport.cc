@@ -227,7 +227,6 @@ CFTransport::SendCFMessageInternal(TransportReceiver *src,
     (void)multicast;
     uintptr_t conn_id = dynamic_cast<const CFTransportAddress &>(dst).conn_id;
     uint32_t msg_id = dynamic_cast<const CFTransportAddress &>(dst).msg_id;
-    printf("send cf message internal\n");
     switch(type) {
         case REPLY_INCONSISTENT_MESSAGE:
             Mlx5Connection_ReplyInconsistentMessage_queue_cornflakes_arena_object(connection, msg_id, conn_id, m, true);
