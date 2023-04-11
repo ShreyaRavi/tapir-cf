@@ -7,6 +7,7 @@
  **********************************************************************/
 
 #include "replication/ir/replica.h"
+#include <google/protobuf/util/message_differencer.h>
 #include "tapir_serialized_cpp.h"
 #include <cstdint>
 
@@ -334,10 +335,10 @@ IRReplica::HandleFinalizeConsensus(const TransportAddress &remote,
         record.SetStatus(opid, RECORD_STATE_FINALIZED);
        
         // TODO SHREYA GO BACK AND PUT BACK IN
-        //if (msg.result() != entry->result) {
+        if (msg.result().result().value() != entry->result.result().value()) {
             // Update the result
-        //    entry->result = msg.result();
-        //}
+            entry->result = msg.result();
+        }
 
         if (useCornflakes) {
              // Send the reply

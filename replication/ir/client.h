@@ -50,7 +50,7 @@ class IRClient : public Client
 {
 public:
     using result_set_t = std::map<string, std::size_t>;
-    using decide_t = std::function<string(const result_set_t &)>;
+    using decide_t = std::function<Reply(const result_set_t &)>;
 
     IRClient(const transport::Configuration &config,
              Transport *transport,
@@ -130,7 +130,7 @@ protected:
     struct PendingConsensusRequest : public PendingRequest {
         QuorumSet<opnum_t, proto::ReplyConsensusMessage> consensusReplyQuorum;
         decide_t decide;
-        string decideResult;
+        Reply decideResult;
         const std::size_t quorumSize;
         const std::size_t superQuorumSize;
         bool on_slow_path;

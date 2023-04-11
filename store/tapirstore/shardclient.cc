@@ -180,7 +180,7 @@ ShardClient::Prepare(uint64_t id, const Transaction &txn,
     });
 }
 
-std::string
+replication::Reply
 ShardClient::TapirDecide(const std::map<std::string, std::size_t> &results)
 {
 
@@ -189,7 +189,7 @@ ShardClient::TapirDecide(const std::map<std::string, std::size_t> &results)
     Timestamp ts = 0;
     string final_reply_str;
     TapirReply final_reply;
-
+    replication::Reply replicationReply;
     for (const auto& string_and_count : results) {
         const std::string &s = string_and_count.first;
         const std::size_t count = string_and_count.second;
@@ -200,7 +200,8 @@ ShardClient::TapirDecide(const std::map<std::string, std::size_t> &results)
 	if (reply.status() == REPLY_OK) {
 	    ok_count += count;
 	} else if (reply.status() == REPLY_FAIL) {
-	    return s;
+	    *replicationReply.mutable_result() = reply;
+            return replicationReply;
 	} else if (reply.status() == REPLY_RETRY) {
 	    Timestamp t(reply.timestamp());
 	    if (t > ts) {
@@ -215,8 +216,9 @@ ShardClient::TapirDecide(const std::map<std::string, std::size_t> &results)
        final_reply.set_status(REPLY_RETRY);
        ts.serialize(final_reply.mutable_timestamp());
     }
-    final_reply.SerializeToString(&final_reply_str);
-    return final_reply_str;
+
+    *replicationReply.mutable_result() = final_reply;
+    return replicationReply;
 }
 
 void
@@ -281,12 +283,10 @@ ShardClient::GetTimeout()
 
 /* Callback from a shard replica on get operation completion. */
 void
-ShardClient::GetCallback(const string &request_str, const string &reply_str)
+ShardClient::GetCallback(const string &request_str, const replication::Reply &replication_reply)
 {
     /* Replies back from a shard. */
-    replication::Reply replicationReply;
-    replicationReply.ParseFromString(reply_str);
-    const TapirReply& reply = replicationReply.result();
+    const TapirReply& reply = replication_reply.result();
     Debug("[shard %lu:%i] GET callback [%d]", client_id, shard, reply.status());
     if (waiting != NULL) {
         Promise *w = waiting;
@@ -301,11 +301,9 @@ ShardClient::GetCallback(const string &request_str, const string &reply_str)
 
 /* Callback from a shard replica on prepare operation completion. */
 void
-ShardClient::PrepareCallback(const string &request_str, const string &reply_str)
+ShardClient::PrepareCallback(const string &request_str, const replication::Reply &replication_reply)
 {
-    replication::Reply replicationReply;
-    replicationReply.ParseFromString(reply_str);
-    const TapirReply& reply = replicationReply.result();
+    const TapirReply& reply = replication_reply.result();
     Debug("[shard %lu:%i] PREPARE callback [%d]", client_id, shard, reply.status());
     if (waiting != NULL) {
         Promise *w = waiting;
@@ -320,7 +318,7 @@ ShardClient::PrepareCallback(const string &request_str, const string &reply_str)
 
 /* Callback from a shard replica on commit operation completion. */
 void
-ShardClient::CommitCallback(const string &request_str, const string &reply_str)
+ShardClient::CommitCallback(const string &request_str, const replication::Reply &reply_str)
 {
     // COMMITs always succeed.
 
@@ -335,7 +333,7 @@ ShardClient::CommitCallback(const string &request_str, const string &reply_str)
 
 /* Callback from a shard replica on abort operation completion. */
 void
-ShardClient::AbortCallback(const string &request_str, const string &reply_str)
+ShardClient::AbortCallback(const string &request_str, const replication::Reply &reply_str)
 {
     // ABORTs always succeed.
 

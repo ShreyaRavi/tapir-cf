@@ -95,16 +95,16 @@ private:
     Promise *blockingBegin; // block until finished
 
     /* Tapir's Decide Function. */
-    std::string TapirDecide(const std::map<std::string, std::size_t> &results);
+    replication::Reply TapirDecide(const std::map<std::string, std::size_t> &results);
 
     /* Timeout for Get requests, which only go to one replica. */
     void GetTimeout();
 
     /* Callbacks for hearing back from a shard for an operation. */
-    void GetCallback(const std::string &, const std::string &);
-    void PrepareCallback(const std::string &, const std::string &);
-    void CommitCallback(const std::string &, const std::string &);
-    void AbortCallback(const std::string &, const std::string &);
+    void GetCallback(const std::string &, const replication::Reply &);
+    void PrepareCallback(const std::string &, const replication::Reply &);
+    void CommitCallback(const std::string &, const replication::Reply &);
+    void AbortCallback(const std::string &, const replication::Reply &);
 
     /* Helper Functions for starting and finishing requests */
     void StartRequest();

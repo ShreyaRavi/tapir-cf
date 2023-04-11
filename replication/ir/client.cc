@@ -276,7 +276,7 @@ void IRClient::HandleSlowPathConsensus(
     proto::FinalizeConsensusMessage response;
     response.mutable_opid()->set_clientid(clientid);
     response.mutable_opid()->set_clientreqid(reqid);
-    response.set_result(req->decideResult);
+    *response.mutable_result() = req->decideResult;
     if (transport->SendMessageToAll(this, response)) {
         Debug("FinalizeConsensusMessages sent for request %lu.", reqid);
         req->sent_confirms = true;
@@ -300,8 +300,8 @@ void IRClient::HandleFastPathConsensus(
     // if we have a super quorum of _matching_ responses.
     map<string, std::size_t> results;
     for (const auto &m : msgs) {
-        const std::string result = m.second.result().SerializeAsString();
-        results[result]++;
+        const Reply result = m.second.result();
+        results[result.SerializeAsString()]++;
     }
 
     for (const auto &result : results) {
@@ -312,7 +312,10 @@ void IRClient::HandleFastPathConsensus(
         // A super quorum of matching requests was found!
         Debug("A super quorum of matching requests was found for request %lu.",
               reqid);
-        req->decideResult = result.first;
+
+        Reply reply;
+        reply.ParseFromString(result.first);
+        req->decideResult = reply;
 
         // Set up a new timeout for the finalize phase.
         req->timer = std::unique_ptr<Timeout>(new Timeout(
@@ -323,7 +326,7 @@ void IRClient::HandleFastPathConsensus(
         proto::FinalizeConsensusMessage response;
         response.mutable_opid()->set_clientid(clientid);
         response.mutable_opid()->set_clientreqid(reqid);
-        response.set_result(result.first);
+        *response.mutable_result() = reply;
         if (transport->SendMessageToAll(this, response)) {
             Debug("FinalizeConsensusMessages sent for request %lu.", reqid);
             req->sent_confirms = true;
@@ -368,7 +371,7 @@ IRClient::ResendConfirmation(const uint64_t reqId, bool isConsensus)
         proto::FinalizeConsensusMessage response;
         response.mutable_opid()->set_clientid(clientid);
         response.mutable_opid()->set_clientreqid(req->clientReqId);
-        response.set_result(req->decideResult);
+        *response.mutable_result() = req->decideResult;
 
         if(transport->SendMessageToAll(this, response)) {
             req->timer->Reset();
@@ -468,9 +471,8 @@ IRClient::HandleInconsistentReply(const TransportAddress &remote,
             } else {
                 Warning("Could not send finalize message to replicas");
             }
-
-
-            req->continuation(req->request, "");
+            Reply reply;
+            req->continuation(req->request, reply);
             req->continuationInvoked = true;
         }
     }
@@ -521,7 +523,7 @@ IRClient::HandleConsensusReply(const TransportAddress &remote,
             req->transition_to_slow_path_timer.reset();
         }
 
-        req->decideResult = msg.result().SerializeAsString();
+        req->decideResult = msg.result();
         req->reply_consensus_view = msg.view();
         HandleSlowPathConsensus(reqId, msgs, true, req);
     } else if (req->on_slow_path && msgs.size() >= req->quorumSize) {
@@ -596,7 +598,7 @@ IRClient::HandleUnloggedReply(const TransportAddress &remote,
     // remove from pending list
     pendingReqs.erase(it);
     // invoke application callback
-    req->continuation(req->request, msg.reply().SerializeAsString());
+    req->continuation(req->request, msg.reply());
     delete req;
 }
 

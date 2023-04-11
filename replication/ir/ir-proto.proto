@@ -68,7 +68,7 @@ message ReplyConsensusMessage {
 
 message FinalizeConsensusMessage {
     required OpID opid = 1;
-    required bytes result = 2;
+    required replication.Reply result = 2;
 }
 
 message DoViewChangeMessage {
