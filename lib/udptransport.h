@@ -88,7 +88,6 @@ private:
     };
 
     void* arena;
-    bool useCornflakes;
 
     std::unordered_map<uint32_t, MessageType> msgRespType;
 
@@ -106,6 +105,7 @@ private:
         int fd;
     } reorderBuffer;
     int dscp;
+    bool useCornflakes;
 
     event_base *libeventBase;
     std::vector<event *> listenerEvents;

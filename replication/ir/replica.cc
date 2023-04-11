@@ -526,6 +526,7 @@ IRReplica::HandleUnlogged(const TransportAddress &remote,
         if (!(transport->SendMessage(this, remote, reply))) {
             Warning("Failed to send reply message");
         }
+    }
 }
 
 void IRReplica::HandleViewChangeTimeout() {

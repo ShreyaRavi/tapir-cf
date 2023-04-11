@@ -182,7 +182,7 @@ BindToPort(int fd, const string &host, const string &port)
 }
 
 UDPTransport::UDPTransport(double dropRate, double reorderRate,
-        int dscp, bool handleSignals)
+        int dscp, bool handleSignals, bool useCornflakes)
     : dropRate(dropRate), reorderRate(reorderRate), dscp(dscp), useCornflakes(useCornflakes)
 {
 
@@ -539,7 +539,7 @@ UDPTransport::Stop()
 }
 
 static void
-DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unordered_map<uint32_t, MessageType>& respTypeMap, void* arena)
+DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unordered_map<uint32_t, MessageType>& respTypeMap, void* arena, bool useCornflakes)
 {
     const char *ptr = buf;
     // first 4 bytes: msg id
@@ -720,7 +720,7 @@ UDPTransport::OnReadable(int fd)
         size_t typeLen = *((size_t *)buf);
         if (typeLen != 0) {
             // Not a fragment. Decode the packet
-            DecodePacket(buf, sz, msgType, msg, msgRespType, arena);
+            DecodePacket(buf, sz, msgType, msg, msgRespType, arena, useCornflakes);
         } else {
             // This is a fragment. Decode the header
             const char *ptr = buf;
@@ -762,7 +762,7 @@ UDPTransport::OnReadable(int fd)
             if (info.data.size() == msgLen) {
                 Debug("Completed packet reconstruction");
                 DecodePacket(info.data.c_str(), info.data.size(),
-                             msgType, msg, msgRespType, arena);
+                             msgType, msg, msgRespType, arena, useCornflakes);
                 info.msgId = 0;
                 info.data.clear();
             } else {
