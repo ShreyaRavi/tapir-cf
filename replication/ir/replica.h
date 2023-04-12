@@ -35,9 +35,9 @@ public:
     // Invoke inconsistent operation, no return value
     virtual void ExecInconsistentUpcall(const string &str1) { };
     // Invoke consensus operation
-    virtual void ExecConsensusUpcall(const string &str1, Reply &str2) { };
+    virtual void ExecConsensusUpcall(const string &str1, void* reply) { };
     // Invoke unreplicated operation
-    virtual void UnloggedUpcall(const string &str1, Reply &str2) { };
+    virtual void UnloggedUpcall(const string &str1, void* reply) { };
     // Sync
     virtual void Sync(const std::map<opid_t, RecordEntry>& record) { };
     // Merge

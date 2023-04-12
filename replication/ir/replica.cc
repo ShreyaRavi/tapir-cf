@@ -242,9 +242,9 @@ IRReplica::HandleProposeConsensus(const TransportAddress &remote,
     // Check record if we've already handled this request
     RecordEntry *entry = record.Find(opid);
     // ReplyConsensusMessage reply;
-    void* reply;
-
+    
     if (useCornflakes) {
+        void* reply;
         ReplyConsensusMessage_new_in(arena, &reply);  
         if (entry != NULL) {
             ReplyConsensusMessage_set_view(reply, entry->view); 
@@ -262,7 +262,7 @@ IRReplica::HandleProposeConsensus(const TransportAddress &remote,
             // Execute op
             Reply result;
 
-            app->ExecConsensusUpcall(msg.req().op(), result);
+            app->ExecConsensusUpcall(msg.req().op(), &result);
 
             // Put it in our record as tentative
             record.Add(view, opid, msg.req(), RECORD_STATE_TENTATIVE,
@@ -280,7 +280,6 @@ IRReplica::HandleProposeConsensus(const TransportAddress &remote,
             //ReplyConsensusMessage_set_result(reply, cfResult);
             ReplyConsensusMessage_set_finalized(reply, 0);
         }
-
         // Send the reply
         transport->SendCFMessage(this, remote, reply, REPLY_CONSENSUS_MESSAGE);
     } else {
@@ -297,7 +296,7 @@ IRReplica::HandleProposeConsensus(const TransportAddress &remote,
             // Execute op
             Reply result;
 
-            app->ExecConsensusUpcall(msg.req().op(), result);
+            app->ExecConsensusUpcall(msg.req().op(), &result);
 
             // Put it in our record as tentative
             record.Add(view, opid, msg.req(), RECORD_STATE_TENTATIVE,
@@ -510,7 +509,7 @@ IRReplica::HandleUnlogged(const TransportAddress &remote,
 
     //Debug("Received unlogged request %s", (char *)msg.req().op().c_str());
 
-    app->UnloggedUpcall(msg.req().op(), res);
+    app->UnloggedUpcall(msg.req().op(), &res);
 
     if (useCornflakes) {
         void* reply;

@@ -54,10 +54,10 @@ public:
     void ExecInconsistentUpcall(const string &str1) override;
 
     // Invoke consensus operation
-    void ExecConsensusUpcall(const string &str1, replication::Reply &str2) override;
+    void ExecConsensusUpcall(const string &str1, void* reply) override;
 
     // Invoke unreplicated operation
-    void UnloggedUpcall(const string &str1, replication::Reply &str2) override;
+    void UnloggedUpcall(const string &str1, void* reply) override;
 
     // Sync
     void Sync(const std::map<opid_t, RecordEntry>& record) override;

@@ -69,12 +69,13 @@ Server::ExecInconsistentUpcall(const string &str1)
 }
 
 void
-Server::ExecConsensusUpcall(const string &str1, replication::Reply &str2)
+Server::ExecConsensusUpcall(const string &str1, void* reply)
 {
     Debug("Received Consensus Request: %s", str1.c_str());
 
+    replication::Reply* replicationReply = (replication::Reply*) reply;
     TapirRequest request;
-    TapirReply reply;
+    TapirReply tapirReply;
     int status;
     Timestamp proposed;
 
@@ -86,11 +87,11 @@ Server::ExecConsensusUpcall(const string &str1, replication::Reply &str2)
                                 Transaction(request.prepare().txn()),
                                 Timestamp(request.prepare().timestamp()),
                                 proposed);
-        reply.set_status(status);
+        tapirReply.set_status(status);
         if (proposed.isValid()) {
-            proposed.serialize(reply.mutable_timestamp());
+            proposed.serialize(tapirReply.mutable_timestamp());
         }
-        *str2.mutable_result() = reply;
+        *(replicationReply->mutable_result()) = tapirReply;
         break;
     default:
         Panic("Unrecognized consensus operation.");
@@ -99,12 +100,13 @@ Server::ExecConsensusUpcall(const string &str1, replication::Reply &str2)
 }
 
 void
-Server::UnloggedUpcall(const string &str1, replication::Reply &str2)
+Server::UnloggedUpcall(const string &str1, void* reply)
 {
     Debug("Received Consensus Request: %s", str1.c_str());
-
+    
+    replication::Reply* replicationReply = (replication::Reply*) reply;
     TapirRequest request;
-    TapirReply reply;
+    TapirReply tapirReply;
     int status;
 
     request.ParseFromString(str1);
@@ -116,18 +118,18 @@ Server::UnloggedUpcall(const string &str1, replication::Reply &str2)
             status = store->Get(request.txnid(), request.get().key(),
                                request.get().timestamp(), val);
             if (status == 0) {
-                reply.set_value(val.second);
+                tapirReply.set_value(val.second);
             }
         } else {
             pair<Timestamp, string> val;
             status = store->Get(request.txnid(), request.get().key(), val);
             if (status == 0) {
-                reply.set_value(val.second);
-                val.first.serialize(reply.mutable_timestamp());
+                tapirReply.set_value(val.second);
+                val.first.serialize(tapirReply.mutable_timestamp());
             }
         }
-        reply.set_status(status);
-        *str2.mutable_result() = reply;
+        tapirReply.set_status(status);
+        *(replicationReply->mutable_result()) = tapirReply;
         break;
     default:
         Panic("Unrecognized Unlogged request.");
