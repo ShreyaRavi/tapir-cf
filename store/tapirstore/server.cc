@@ -37,7 +37,8 @@ namespace tapirstore {
 using namespace std;
 using namespace proto;
 
-Server::Server(bool linearizable)
+Server::Server(bool linearizable, bool useCornflakes)
+    : useCornflakes(useCornflakes)
 {
     store = new Store(linearizable);
 }
@@ -73,9 +74,13 @@ Server::ExecConsensusUpcall(const string &str1, void* reply)
 {
     Debug("Received Consensus Request: %s", str1.c_str());
 
-    replication::Reply* replicationReply = (replication::Reply*) reply;
+    if (useCornflakes) {
+
+    } else {
+        
+    }
     TapirRequest request;
-    TapirReply tapirReply;
+    
     int status;
     Timestamp proposed;
 
@@ -87,11 +92,17 @@ Server::ExecConsensusUpcall(const string &str1, void* reply)
                                 Transaction(request.prepare().txn()),
                                 Timestamp(request.prepare().timestamp()),
                                 proposed);
-        tapirReply.set_status(status);
-        if (proposed.isValid()) {
-            proposed.serialize(tapirReply.mutable_timestamp());
+        if (useCornflakes) {
+            // 
+        } else {
+            replication::Reply* replicationReply = (replication::Reply*) reply;
+            TapirReply tapirReply;
+            tapirReply.set_status(status);
+            if (proposed.isValid()) {
+                proposed.serialize(tapirReply.mutable_timestamp());
+            }
+            *(replicationReply->mutable_result()) = tapirReply;
         }
-        *(replicationReply->mutable_result()) = tapirReply;
         break;
     default:
         Panic("Unrecognized consensus operation.");
@@ -104,33 +115,39 @@ Server::UnloggedUpcall(const string &str1, void* reply)
 {
     Debug("Received Consensus Request: %s", str1.c_str());
     
-    replication::Reply* replicationReply = (replication::Reply*) reply;
+    
     TapirRequest request;
-    TapirReply tapirReply;
+    
     int status;
 
     request.ParseFromString(str1);
     Operation op = static_cast<Operation>(request.op());
     switch (op) {
     case GET:
-        if (request.get().has_timestamp()) {
-            pair<Timestamp, string> val;
-            status = store->Get(request.txnid(), request.get().key(),
-                               request.get().timestamp(), val);
-            if (status == 0) {
-                tapirReply.set_value(val.second);
-            }
+        if (useCornflakes) {
+
         } else {
-            pair<Timestamp, string> val;
-            status = store->Get(request.txnid(), request.get().key(), val);
-            if (status == 0) {
-                tapirReply.set_value(val.second);
-                val.first.serialize(tapirReply.mutable_timestamp());
+            replication::Reply* replicationReply = (replication::Reply*) reply;
+            TapirReply tapirReply;
+            if (request.get().has_timestamp()) {
+                pair<Timestamp, string> val;
+                status = store->Get(request.txnid(), request.get().key(),
+                                request.get().timestamp(), val);
+                if (status == 0) {
+                    tapirReply.set_value(val.second);
+                }
+            } else {
+                pair<Timestamp, string> val;
+                status = store->Get(request.txnid(), request.get().key(), val);
+                if (status == 0) {
+                    tapirReply.set_value(val.second);
+                    val.first.serialize(tapirReply.mutable_timestamp());
+                }
             }
+            tapirReply.set_status(status);
+            *(replicationReply->mutable_result()) = tapirReply;
+            break;
         }
-        tapirReply.set_status(status);
-        *(replicationReply->mutable_result()) = tapirReply;
-        break;
     default:
         Panic("Unrecognized Unlogged request.");
     }
@@ -275,7 +292,7 @@ main(int argc, char **argv)
     bool useCornflakes = false;
     CFTransport transport(connection, arena);
 
-    tapirstore::Server server(linearizable);
+    tapirstore::Server server(linearizable, useCornflakes);
 
     replication::ir::IRReplica replica(config, index, &transport, &server, connection, arena, useCornflakes);
 
