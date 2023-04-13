@@ -255,19 +255,57 @@ IRReplica::HandleProposeConsensus(const TransportAddress &remote,
             OpID_set_clientid(opid, clientid);
             OpID_set_clientreqid(opid, clientreqid);
 
+            ReplyConsensusMessage_set_result(reply, entry->resultCf);
+
+            // ideally there's a set_result where i can do set_result
+            /*
+            void* replicatedReply;
+            ReplyConsensusMessage_get_mut_result(reply, &replicatedReply);
+            void* recordReply;
+            ReplyConsensusMessage_get_mut_result(entry->resultCf, &recordReply);
+
+            void* tapirReply;
+            Reply_get_mut_result(replicatedReply, &tapirReply);
+            void* recordTapirReply;
+            Reply_get_mut_result(recordReply, &recordTapirReply);
+
+            int32_t status;
+            TapirReply_get_status(recordTapirReply, &status);
+            TapirReply_set_status(tapirReply, status);
+
+            void* cfValue;
+            TapirReply_get_value(recordTapirReply, &cfValue);
+            // unsigned char* value;
+            // uintptr_t len;
+            // CFString_unpack(cfValue, &value, &len);
+            TapirReply_set_value(tapirReply, cfValue);
+            
+            void* timestamp;
+            TapirReply_get_mut_timestamp(tapirReply, &timestamp);
+            void* recordTimestamp;
+            TapirReply_get_mut_timestamp(recordTapirReply, &recordTimestamp);
+            
+            uint64_t timestampId;
+            TimestampMessage_get_id(recordTimestamp, &timestampId);
+            TimestampMessage_set_id(timestamp, timestampId);
+            uint64_t timestampVal;
+            TimestampMessage_get_timestamp(recordTimestamp, &timestampVal);
+            TimestampMessage_set_timestamp(timestamp, timestampVal);
+            */
             //void* cfResult;
             //CFBytes_new((unsigned char*) entry->result.c_str(), entry->result.length(), connection, arena, &cfResult);
             //ReplyConsensusMessage_set_result(reply, cfResult);
             ReplyConsensusMessage_set_finalized(reply, entry->state == RECORD_STATE_FINALIZED); 
         } else {
             // Execute op
-            Reply result;
+            void* result;
+            //Reply result;
 
-            app->ExecConsensusUpcall(msg.req().op(), &result);
+            app->ExecConsensusUpcall(msg.req().op(), result);
 
             // Put it in our record as tentative
             record.Add(view, opid, msg.req(), RECORD_STATE_TENTATIVE,
-                    RECORD_TYPE_CONSENSUS, &result);
+                    RECORD_TYPE_CONSENSUS, result);
             // 3. Return Reply
             ReplyConsensusMessage_set_view(reply, view); 
             ReplyConsensusMessage_set_replicaIdx(reply, myIdx);
@@ -276,6 +314,43 @@ IRReplica::HandleProposeConsensus(const TransportAddress &remote,
             OpID_set_clientid(opid, clientid);
             OpID_set_clientreqid(opid, clientreqid);
 
+            ReplyConsensusMessage_set_result(reply, result);
+
+            // ideally there's a set_result where i can do set_result
+            /*
+            void* replicatedReply;
+            ReplyConsensusMessage_get_mut_result(reply, &replicatedReply);
+            void* recordReply;
+            ReplyConsensusMessage_get_mut_result(&result, &recordReply);
+
+            void* tapirReply;
+            Reply_get_mut_result(replicatedReply, &tapirReply);
+            void* recordTapirReply;
+            Reply_get_mut_result(recordReply, &recordTapirReply);
+
+            int32_t status;
+            TapirReply_get_status(recordTapirReply, &status);
+            TapirReply_set_status(tapirReply, status);
+
+            void* cfValue;
+            TapirReply_get_value(recordTapirReply, &cfValue);
+            // unsigned char* value;
+            // uintptr_t len;
+            // CFString_unpack(cfValue, &value, &len);
+            TapirReply_set_value(tapirReply, cfValue);
+            
+            void* timestamp;
+            TapirReply_get_mut_timestamp(tapirReply, &timestamp);
+            void* recordTimestamp;
+            TapirReply_get_mut_timestamp(recordTapirReply, &recordTimestamp);
+            
+            uint64_t timestampId;
+            TimestampMessage_get_id(recordTimestamp, &timestampId);
+            TimestampMessage_set_id(timestamp, timestampId);
+            uint64_t timestampVal;
+            TimestampMessage_get_timestamp(recordTimestamp, &timestampVal);
+            TimestampMessage_set_timestamp(timestamp, timestampVal);
+            */
             //void* cfResult;
             //CFBytes_new((unsigned char*) (result.c_str()), result.length(), connection, arena, &cfResult);
             //ReplyConsensusMessage_set_result(reply, cfResult);
@@ -506,22 +581,25 @@ void
 IRReplica::HandleUnlogged(const TransportAddress &remote,
                     const UnloggedRequestMessage &msg)
 {
-    Reply res;
 
     //Debug("Received unlogged request %s", (char *)msg.req().op().c_str());
 
-    app->UnloggedUpcall(msg.req().op(), &res);
 
     if (useCornflakes) {
+        void* res;
+        app->UnloggedUpcall(msg.req().op(), res);
+ 
         void* reply;
         UnloggedReplyMessage_new_in(arena, &reply);
         UnloggedReplyMessage_set_clientreqid(reply, msg.req().clientreqid()); 
+        UnloggedReplyMessage_set_reply(reply, res);
         //void* cfResult;
         //CFBytes_new((unsigned char*) (res.c_str()), res.length(), connection, arena, &cfResult);
         //UnloggedReplyMessage_set_reply(reply, cfResult);
 
         transport->SendCFMessage(this, remote, reply, UNLOGGED_REPLY_MESSAGE);
     } else {
+        Reply res;
         UnloggedReplyMessage reply;
         *reply.mutable_reply() = res;
         reply.set_clientreqid(msg.req().clientreqid());
