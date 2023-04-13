@@ -71,16 +71,16 @@ struct RecordEntry
     RecordEntry(){};
     RecordEntry(view_t view, opid_t opid, RecordEntryState state,
                 RecordEntryType type, const Request &request,
-                void* result, bool useCornflakes = false)
+                void* resultPtr, bool useCornflakes = false)
         : view(view),
           opid(opid),
           state(state),
           type(type),
           request(request){
             if (useCornflakes) {
-                resultCf = result;
+                resultCf = resultPtr;
             } else {
-                Reply* replyPtr = (Reply*) result;
+                Reply* replyPtr = (Reply*) resultPtr;
                 result = *replyPtr;
             }
           }
@@ -94,6 +94,7 @@ public:
     // [1]. We make it non-copyable to avoid unnecessary copies.
     //
     // [1]: https://stackoverflow.com/a/3279550/3187068
+    Record(){ Panic("unimplemented record default constructor"); };
     Record(void* arena, bool useCornflakes);
     Record(const proto::RecordProto &record_proto);
     Record(Record &&other) : Record() { swap(*this, other); }
@@ -113,7 +114,7 @@ public:
                      RecordEntryType type);
     RecordEntry &Add(view_t view, opid_t opid, const Request &request,
                      RecordEntryState state, RecordEntryType type,
-                     const Reply &result);
+                     void* resultPtr);
     RecordEntry *Find(opid_t opid);
     bool SetStatus(opid_t opid, RecordEntryState state);
     bool SetResult(opid_t opid, const Reply &result);

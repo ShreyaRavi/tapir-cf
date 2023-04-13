@@ -267,7 +267,7 @@ IRReplica::HandleProposeConsensus(const TransportAddress &remote,
 
             // Put it in our record as tentative
             record.Add(view, opid, msg.req(), RECORD_STATE_TENTATIVE,
-                    RECORD_TYPE_CONSENSUS, result);
+                    RECORD_TYPE_CONSENSUS, &result);
             // 3. Return Reply
             ReplyConsensusMessage_set_view(reply, view); 
             ReplyConsensusMessage_set_replicaIdx(reply, myIdx);
@@ -301,7 +301,7 @@ IRReplica::HandleProposeConsensus(const TransportAddress &remote,
 
             // Put it in our record as tentative
             record.Add(view, opid, msg.req(), RECORD_STATE_TENTATIVE,
-                    RECORD_TYPE_CONSENSUS, result);
+                    RECORD_TYPE_CONSENSUS, &result);
 
             // 3. Return Reply
             reply.set_view(view);

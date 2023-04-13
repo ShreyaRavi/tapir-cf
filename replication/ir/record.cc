@@ -124,13 +124,13 @@ Record::SetStatus(opid_t op, RecordEntryState state)
 bool
 Record::SetResult(opid_t op, const Reply &result)
 {
-    // RecordEntry *entry = Find(op);
-    // if (entry == NULL) {
-    //     return false;
-    // }
+    RecordEntry *entry = Find(op);
+    if (entry == NULL) {
+         return false;
+    }
 
-    // entry->result = result;
-    // return true;
+    entry->result = result;
+    return true;
 }
 
 bool
