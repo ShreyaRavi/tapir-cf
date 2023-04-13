@@ -33,7 +33,7 @@ public:
     uint64_t getID() const { return id; };
     uint64_t getTimestamp() const { return timestamp; };
     void setTimestamp(uint64_t t) { timestamp = t; };  
-    void serialize(TimestampMessage *msg) const;
+    void serialize(void *msg, bool useCornflakes = false) const;
 
 private:
 	uint64_t timestamp;

@@ -58,8 +58,15 @@ Timestamp::isValid() const
 }
 
 void
-Timestamp::serialize(TimestampMessage *msg) const
+Timestamp::serialize(void* msg, bool useCornflakes) const
 {
-    msg->set_timestamp(timestamp);
-    msg->set_id(id);
+    if (useCornflakes) {
+        TimestampMessage_set_timestamp(msg, timestamp);
+        TimestampMessage_set_id(msg, id);
+    } else {
+        TimestampMessage* protoMsg = (TimestampMessage*) msg;
+        msg->set_timestamp(timestamp);
+        msg->set_id(id);
+    }
+    
 }

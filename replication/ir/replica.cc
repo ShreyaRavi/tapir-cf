@@ -299,6 +299,7 @@ IRReplica::HandleProposeConsensus(const TransportAddress &remote,
         } else {
             // Execute op
             void* result;
+            Reply_new_in(arena, &result);
             //Reply result;
 
             app->ExecConsensusUpcall(msg.req().op(), result);
@@ -587,6 +588,8 @@ IRReplica::HandleUnlogged(const TransportAddress &remote,
 
     if (useCornflakes) {
         void* res;
+        Reply_new_in(arena, &res);
+
         app->UnloggedUpcall(msg.req().op(), res);
  
         void* reply;

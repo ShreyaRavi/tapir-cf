@@ -37,8 +37,8 @@ namespace tapirstore {
 using namespace std;
 using namespace proto;
 
-Server::Server(bool linearizable, bool useCornflakes)
-    : useCornflakes(useCornflakes)
+Server::Server(bool linearizable, void* arena, void* connection, bool useCornflakes)
+    : useCornflakes(useCornflakes), arena(arena), connection(connection)
 {
     store = new Store(linearizable);
 }
@@ -74,11 +74,6 @@ Server::ExecConsensusUpcall(const string &str1, void* reply)
 {
     Debug("Received Consensus Request: %s", str1.c_str());
 
-    if (useCornflakes) {
-
-    } else {
-        
-    }
     TapirRequest request;
     
     int status;
@@ -93,7 +88,16 @@ Server::ExecConsensusUpcall(const string &str1, void* reply)
                                 Timestamp(request.prepare().timestamp()),
                                 proposed);
         if (useCornflakes) {
-            // 
+            void* result;
+            Reply_get_mut_result(reply, &result);
+            
+            TapirReply_set_status(result, status);
+            void* timestamp;
+            TapirReply_get_mut_timestamp(result, &timestamp);
+
+            if (proposed.isValid()) {
+                proposed.serialize(timestamp, true);
+            }
         } else {
             replication::Reply* replicationReply = (replication::Reply*) reply;
             TapirReply tapirReply;
@@ -115,7 +119,6 @@ Server::UnloggedUpcall(const string &str1, void* reply)
 {
     Debug("Received Consensus Request: %s", str1.c_str());
     
-    
     TapirRequest request;
     
     int status;
@@ -125,7 +128,32 @@ Server::UnloggedUpcall(const string &str1, void* reply)
     switch (op) {
     case GET:
         if (useCornflakes) {
+            void* tapirReply;
+            Reply_get_mut_result(reply, &tapirReply);
 
+            if (request.get().has_timestamp()) {
+                pair<Timestamp, string> val;
+                status = store->Get(request.txnid(), request.get().key(),
+                                request.get().timestamp(), val);
+                if (status == 0) {
+                    void* cfString;
+                    CFString_new((unsigned char*) val.second.c_str(), val.second.length(), connection, arena, &cfString);
+                    TapirReply_set_value(tapirReply, cfString);
+                }
+            } else {
+                pair<Timestamp, string> val;
+                status = store->Get(request.txnid(), request.get().key(), val);
+                if (status == 0) {
+                    void* cfString;
+                    CFString_new((unsigned char*) val.second.c_str(), val.second.length(), connection, arena, &cfString);
+                    TapirReply_set_value(tapirReply, cfString);
+                    void* timestamp;
+                    TapirReply_get_mut_timestamp(tapirReply, &timestamp);
+                    val.first.serialize(timestamp);
+                }
+            }
+            TapirReply_set_status(tapirReply, status);
+            break;
         } else {
             replication::Reply* replicationReply = (replication::Reply*) reply;
             TapirReply tapirReply;
@@ -292,7 +320,7 @@ main(int argc, char **argv)
     bool useCornflakes = false;
     CFTransport transport(connection, arena);
 
-    tapirstore::Server server(linearizable, useCornflakes);
+    tapirstore::Server server(linearizable, arena, connection, useCornflakes);
 
     replication::ir::IRReplica replica(config, index, &transport, &server, connection, arena, useCornflakes);
 

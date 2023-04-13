@@ -47,7 +47,7 @@ using RecordEntry = replication::ir::RecordEntry;
 class Server : public replication::ir::IRAppReplica
 {
 public:
-    Server(bool linearizable, bool useCornflakes = false);
+    Server(bool linearizable, void* arena = NULL, void* connection = NULL, bool useCornflakes = false);
     virtual ~Server();
 
     // Invoke inconsistent operation, no return value
@@ -73,6 +73,8 @@ public:
 private:
     TxnStore *store;
     bool useCornflakes;
+    void* arena;
+    void* connection;
 
     enum Operation {
         GET = 1,

@@ -72,7 +72,7 @@ Record::Add(view_t view, opid_t opid, const Request &request,
 {
     if (useCornflakes) {
         void* reply;
-        // Reply new_in
+        Reply_new_in(arena, &reply);
         return Add(RecordEntry(view, opid, state, type, request, reply, useCornflakes));
     } else {
         Reply reply;
