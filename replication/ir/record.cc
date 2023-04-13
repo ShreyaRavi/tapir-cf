@@ -33,6 +33,7 @@
 #include <utility>
 
 #include "lib/assert.h"
+#include "tapir_serialized_cpp.h"
 
 namespace replication {
 namespace ir {

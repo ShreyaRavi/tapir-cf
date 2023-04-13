@@ -7,6 +7,7 @@
  **********************************************************************/
 
 #include "store/common/timestamp.h"
+#include "tapir_serialized_cpp.h"
 
 void
 Timestamp::operator=(const Timestamp &t)
@@ -65,8 +66,8 @@ Timestamp::serialize(void* msg, bool useCornflakes) const
         TimestampMessage_set_id(msg, id);
     } else {
         TimestampMessage* protoMsg = (TimestampMessage*) msg;
-        msg->set_timestamp(timestamp);
-        msg->set_id(id);
+        protoMsg->set_timestamp(timestamp);
+        protoMsg->set_id(id);
     }
     
 }
