@@ -551,7 +551,7 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
  
     MessageType respType = respTypeMap[msgId];
     respTypeMap.erase(msgId);
-    /*
+    
     if (useCornflakes) {
         void* reply;
         if (respType == REPLY_INCONSISTENT_MESSAGE) {
@@ -618,10 +618,27 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
             ReplyConsensusMessage_get_replicaIdx(reply, &replicaIdx);
 
             void* result;
-            ReplyConsensusMessage_get_result(reply, &result);
-            const unsigned char* resultPtr;
-            uint64_t resultLen;
-            CFBytes_unpack(result, &resultPtr, &resultLen);
+            ReplyConsensusMessage_get_mut_result(reply, &result);
+            
+            void* tapirReply;
+            Reply_get_mut_result(result, &tapirReply);
+
+            int32_t status;
+            TapirReply_get_status(tapirReply, &status);
+
+            void* cfValue;
+            TapirReply_get_value(tapirReply, &cfValue);
+            unsigned char* replyValue;
+            uintptr_t replyLen;
+            CFString_unpack(cfValue, &replyValue, &replyLen);
+
+            void* timestamp;
+            TapirReply_get_mut_timestamp(tapirReply, &timestamp);
+            
+            uint64_t timestampId;
+            TimestampMessage_get_id(timestamp, &timestampId);
+            uint64_t timestampVal;
+            TimestampMessage_get_timestamp(timestamp, &timestampVal);
 
             uint32_t finalized;
             ReplyConsensusMessage_get_finalized(reply, &finalized);
@@ -638,7 +655,13 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
             replyProto.set_replicaidx(replicaIdx);
             replyProto.mutable_opid()->set_clientid(clientid);
             replyProto.mutable_opid()->set_clientreqid(clientreqid);
-            replyProto.set_result(resultPtr, resultLen);
+
+            replication::tapirstore::proto::TapirReply tapirReplyProto;
+            tapirReplyProto.set_status(status);
+            tapirReplyProto.set_value(replyValue, replyLen);
+            tapirReplyProto.mutable_timestamp()->set_id(timestampId);
+            tapirReplyProto.mutable_timestamp()->set_timestamp(timestampVal);
+            *replyProto.mutable_result()->mutable_result() = tapirReplyProto;
             replyProto.set_finalized(finalized);
             // maybe construct the protobuf and serialize it to string and set that to msg.
             type = replyProto.GetTypeName();
@@ -651,20 +674,42 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
             UnloggedReplyMessage_get_clientreqid(reply, &clientreqid);
         
             void* result;
-            UnloggedReplyMessage_get_reply(reply, &result);
-            const unsigned char* resultPtr;
-            uint64_t resultLen;
-            CFBytes_unpack(result, &resultPtr, &resultLen);
+            UnloggedReplyMessage_get_mut_result(reply, &result);
+            
+            void* tapirReply;
+            Reply_get_mut_result(result, &tapirReply);
+
+            int32_t status;
+            TapirReply_get_status(tapirReply, &status);
+
+            void* cfValue;
+            TapirReply_get_value(tapirReply, &cfValue);
+            unsigned char* replyValue;
+            uintptr_t replyLen;
+            CFString_unpack(cfValue, &replyValue, &replyLen);
+
+            void* timestamp;
+            TapirReply_get_mut_timestamp(tapirReply, &timestamp);
+            
+            uint64_t timestampId;
+            TimestampMessage_get_id(timestamp, &timestampId);
+            uint64_t timestampVal;
+            TimestampMessage_get_timestamp(timestamp, &timestampVal);
 
             replication::ir::proto::UnloggedReplyMessage replyProto;
             replyProto.set_clientreqid(clientreqid);
-            replyProto.set_reply(resultPtr, resultLen);
+            
+            replication::tapirstore::proto::TapirReply tapirReplyProto;
+            tapirReplyProto.set_status(status);
+            tapirReplyProto.set_value(replyValue, replyLen);
+            tapirReplyProto.mutable_timestamp()->set_id(timestampId);
+            tapirReplyProto.mutable_timestamp()->set_timestamp(timestampVal);
+            *tapirReplyProto.mutable_reply()->mutable_result() = tapirReplyProto
             // maybe construct the protobuf and serialize it to string and set that to msg.
             type = replyProto.GetTypeName();
             msg = replyProto.SerializeAsString();
         }
     } else {
-    */
         int msg_type = *((int *)ptr);
         ptr += sizeof(int);
 
