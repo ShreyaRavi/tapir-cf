@@ -37,27 +37,32 @@
 namespace replication {
 namespace ir {
 
+Record::Record(void* arena, bool useCornflakes)
+    : arena(arena), useCornflakes(useCornflakes) {
+
+}
+
 Record::Record(const proto::RecordProto &record_proto) {
-    for (const proto::RecordEntryProto &entry_proto : record_proto.entry()) {
-        const view_t view = entry_proto.view();
-        const opid_t opid = std::make_pair(entry_proto.opid().clientid(),
-                                     entry_proto.opid().clientreqid());
-        Request request;
-        request.set_op(entry_proto.op());
-        request.set_clientid(entry_proto.opid().clientid());
-        request.set_clientreqid(entry_proto.opid().clientreqid());
-        RecordEntryState state = static_cast<RecordEntryState>(entry_proto.state());
-        RecordEntryType type = static_cast<RecordEntryType>(entry_proto.record_type());
-        const Reply& result = entry_proto.result();
-        Add(view, opid, request, state, type, result);
-    }
+    // for (const proto::RecordEntryProto &entry_proto : record_proto.entry()) {
+    //     const view_t view = entry_proto.view();
+    //     const opid_t opid = std::make_pair(entry_proto.opid().clientid(),
+    //                                  entry_proto.opid().clientreqid());
+    //     Request request;
+    //     request.set_op(entry_proto.op());
+    //     request.set_clientid(entry_proto.opid().clientid());
+    //     request.set_clientreqid(entry_proto.opid().clientreqid());
+    //     RecordEntryState state = static_cast<RecordEntryState>(entry_proto.state());
+    //     RecordEntryType type = static_cast<RecordEntryType>(entry_proto.record_type());
+    //     const Reply& result = entry_proto.result();
+    //     Add(view, opid, request, state, type, result);
+    // }
 }
 
 RecordEntry &
 Record::Add(const RecordEntry& entry) {
     // Make sure this isn't a duplicate
     ASSERT(entries.count(entry.opid) == 0);
-    entries[entry.opid] = entry;
+    entries.insert(std::pair<opid_t, RecordEntry>(entry.opid, entry));
     return entries[entry.opid];
 }
 
@@ -65,17 +70,28 @@ RecordEntry &
 Record::Add(view_t view, opid_t opid, const Request &request,
             RecordEntryState state, RecordEntryType type)
 {
-    Reply reply;
-    return Add(RecordEntry(view, opid, state, type, request, reply));
+    if (useCornflakes) {
+        void* reply;
+        // Reply new_in
+        return Add(RecordEntry(view, opid, state, type, request, reply, useCornflakes));
+    } else {
+        Reply reply;
+        return Add(RecordEntry(view, opid, state, type, request, &reply, useCornflakes));
+    }
 }
 
 RecordEntry &
 Record::Add(view_t view, opid_t opid, const Request &request,
             RecordEntryState state, RecordEntryType type,
-            const Reply &result)
+            void* result)
 {
+
     RecordEntry &entry = Add(view, opid, request, state, type);
-    entry.result = result;
+    if (useCornflakes) {
+        entry.resultCf = result;
+    } else {
+        entry.result = *((Reply*)result);
+    }
     return entries[opid];
 }
 
@@ -108,13 +124,13 @@ Record::SetStatus(opid_t op, RecordEntryState state)
 bool
 Record::SetResult(opid_t op, const Reply &result)
 {
-    RecordEntry *entry = Find(op);
-    if (entry == NULL) {
-        return false;
-    }
+    // RecordEntry *entry = Find(op);
+    // if (entry == NULL) {
+    //     return false;
+    // }
 
-    entry->result = result;
-    return true;
+    // entry->result = result;
+    // return true;
 }
 
 bool
@@ -154,7 +170,7 @@ Record::ToProto(proto::RecordProto *proto) const
         entry_proto->set_state(entry.state);
         entry_proto->set_record_type(entry.type);
         entry_proto->set_op(entry.request.op());
-        *entry_proto->mutable_result() = entry.result;
+        //*entry_proto->mutable_result() = entry.result; // TODO SHREYA FIX THIS
     }
 }
 

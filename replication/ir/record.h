@@ -66,23 +66,24 @@ struct RecordEntry
     Request request;
     Reply result;
 
-    RecordEntry() { result = Reply(); }
-    RecordEntry(const RecordEntry &x)
-        : view(x.view),
-          opid(x.opid),
-          state(x.state),
-          type(x.type),
-          request(x.request),
-          result(x.result) {}
+    void* resultCf;
+    
+    RecordEntry(){};
     RecordEntry(view_t view, opid_t opid, RecordEntryState state,
                 RecordEntryType type, const Request &request,
-                const Reply &result)
+                void* result, bool useCornflakes = false)
         : view(view),
           opid(opid),
           state(state),
           type(type),
-          request(request),
-          result(result) {}
+          request(request){
+            if (useCornflakes) {
+                resultCf = result;
+            } else {
+                Reply* replyPtr = (Reply*) result;
+                result = *replyPtr;
+            }
+          }
     virtual ~RecordEntry() {}
 };
 
@@ -93,7 +94,7 @@ public:
     // [1]. We make it non-copyable to avoid unnecessary copies.
     //
     // [1]: https://stackoverflow.com/a/3279550/3187068
-    Record(){};
+    Record(void* arena, bool useCornflakes);
     Record(const proto::RecordProto &record_proto);
     Record(Record &&other) : Record() { swap(*this, other); }
     Record(const Record &) = delete;
@@ -124,6 +125,8 @@ public:
 
 private:
     std::map<opid_t, RecordEntry> entries;
+    void* arena;
+    bool useCornflakes;
 };
 
 }      // namespace ir

@@ -28,6 +28,7 @@ IRReplica::IRReplica(transport::Configuration config, int myIdx,
       persistent_view_info(config.replica(myIdx).host + ":" +
                            config.replica(myIdx).port + "_" +
                            std::to_string(myIdx) + ".bin"),
+      record(bumpArena, useCornflakes),
       // Note that a leader waits for DO-VIEW-CHANGE messages from f other
       // replicas (as opposed to f + 1) for a total of f + 1 replicas.
       do_view_change_quorum(config.f), arena(bumpArena), connection(connection),
