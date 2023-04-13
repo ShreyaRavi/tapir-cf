@@ -410,14 +410,20 @@ IRReplica::HandleFinalizeConsensus(const TransportAddress &remote,
         // Mark entry as finalized
         record.SetStatus(opid, RECORD_STATE_FINALIZED);
        
-        // TODO SHREYA GO BACK AND PUT BACK IN
-        if (msg.result().result().value() != entry->result.result().value()) {
-            // Update the result
-            entry->result = msg.result();
-        }
-
         if (useCornflakes) {
-             // Send the reply
+            // Send the reply
+            void* tapirReply;
+            Reply_get_mut_result(entry->resultCf, &tapirReply);
+            void* cfValue;
+            TapirReply_get_value(tapirReply, &cfValue);
+            const unsigned char* replyValue;
+            uintptr_t replyLen;
+            CFString_unpack(cfValue, &replyValue, &replyLen);
+            string recordVal((const char*) replyValue, replyLen);
+            if (msg.result().result().value() == recordVal) {
+                entry->resultCf = (void*)replyValue;
+            }
+             
             void* reply;
             ConfirmMessage_new_in(arena, &reply); 
             ConfirmMessage_set_view(reply, view); 
@@ -428,6 +434,11 @@ IRReplica::HandleFinalizeConsensus(const TransportAddress &remote,
             OpID_set_clientreqid(opid, msg.opid().clientreqid());
             transport->SendCFMessage(this, remote, reply, CONFIRM_MESSAGE);
         } else {
+            if (msg.result().result().value() != entry->result.result().value()) {
+                // Update the result
+                entry->result = msg.result();
+            }
+ 
             // Send the reply
             ConfirmMessage reply;
             reply.set_view(view);
