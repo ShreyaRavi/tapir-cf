@@ -628,7 +628,7 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
 
             void* cfValue;
             TapirReply_get_value(tapirReply, &cfValue);
-            unsigned char* replyValue;
+            const unsigned char* replyValue;
             uintptr_t replyLen;
             CFString_unpack(cfValue, &replyValue, &replyLen);
 
@@ -656,9 +656,9 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
             replyProto.mutable_opid()->set_clientid(clientid);
             replyProto.mutable_opid()->set_clientreqid(clientreqid);
 
-            replication::tapirstore::proto::TapirReply tapirReplyProto;
+            tapirstore::proto::TapirReply tapirReplyProto;
             tapirReplyProto.set_status(status);
-            tapirReplyProto.set_value(replyValue, replyLen);
+            tapirReplyProto.set_value((const char*) replyValue, replyLen);
             tapirReplyProto.mutable_timestamp()->set_id(timestampId);
             tapirReplyProto.mutable_timestamp()->set_timestamp(timestampVal);
             *replyProto.mutable_result()->mutable_result() = tapirReplyProto;
@@ -674,7 +674,7 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
             UnloggedReplyMessage_get_clientreqid(reply, &clientreqid);
         
             void* result;
-            UnloggedReplyMessage_get_mut_result(reply, &result);
+            UnloggedReplyMessage_get_mut_reply(reply, &result);
             
             void* tapirReply;
             Reply_get_mut_result(result, &tapirReply);
@@ -684,7 +684,7 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
 
             void* cfValue;
             TapirReply_get_value(tapirReply, &cfValue);
-            unsigned char* replyValue;
+            const unsigned char* replyValue;
             uintptr_t replyLen;
             CFString_unpack(cfValue, &replyValue, &replyLen);
 
@@ -699,12 +699,12 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
             replication::ir::proto::UnloggedReplyMessage replyProto;
             replyProto.set_clientreqid(clientreqid);
             
-            replication::tapirstore::proto::TapirReply tapirReplyProto;
+            tapirstore::proto::TapirReply tapirReplyProto;
             tapirReplyProto.set_status(status);
-            tapirReplyProto.set_value(replyValue, replyLen);
+            tapirReplyProto.set_value((const char*) replyValue, replyLen);
             tapirReplyProto.mutable_timestamp()->set_id(timestampId);
             tapirReplyProto.mutable_timestamp()->set_timestamp(timestampVal);
-            *tapirReplyProto.mutable_reply()->mutable_result() = tapirReplyProto
+            *replyProto.mutable_reply()->mutable_result() = tapirReplyProto;
             // maybe construct the protobuf and serialize it to string and set that to msg.
             type = replyProto.GetTypeName();
             msg = replyProto.SerializeAsString();
@@ -733,7 +733,7 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
     
         msg = string(ptr, msgLen);
         ptr += msgLen;
-   /* } */
+   }
 }
 
 void
