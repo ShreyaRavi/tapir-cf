@@ -317,7 +317,7 @@ main(int argc, char **argv)
             1024, // max_packet_size
             64   // max_entries
         );
-    bool useCornflakes = false;
+    bool useCornflakes = true;
     CFTransport transport(connection, arena);
 
     tapirstore::Server server(linearizable, arena, connection, useCornflakes);

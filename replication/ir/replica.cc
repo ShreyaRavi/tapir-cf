@@ -614,6 +614,7 @@ IRReplica::HandleUnlogged(const TransportAddress &remote,
         transport->SendCFMessage(this, remote, reply, UNLOGGED_REPLY_MESSAGE);
     } else {
         Reply res;
+        app->UnloggedUpcall(msg.req().op(), &res);
         UnloggedReplyMessage reply;
         *reply.mutable_reply() = res;
         reply.set_clientreqid(msg.req().clientreqid());
