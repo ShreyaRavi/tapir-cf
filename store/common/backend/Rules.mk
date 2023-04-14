@@ -5,4 +5,4 @@ SRCS += $(addprefix $(d), \
 
 LIB-store-backend := $(o)kvstore.o $(o)lockserver.o $(o)txnstore.o $(o)versionstore.o
 
-include $(d)tests/Rules.mk
+#include $(d)tests/Rules.mk

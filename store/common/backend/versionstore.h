@@ -42,24 +42,46 @@
 class VersionedKVStore
 {
 public:
+    struct ZeroCopyString {
+        ZeroCopyString(const unsigned char *ptr, size_t len, void *smart_ptr) {
+            this->ptr = ptr;
+            this->len = len;
+            this->smart_ptr = smart_ptr;
+        }
+        size_t len;
+        const unsigned char* ptr;
+        void* smart_ptr;
+    };
+
+    struct KVStoreValue {
+        KVStoreValue(const unsigned char *ptr, size_t len, void *smart_ptr) {
+            this->zeroCopyString = ZeroCopyString(ptr, len, smart_ptr);
+        }
+        KVStoreValue(const char* ptr, size_t len) {
+            this->copyString = std::string(ptr, len);
+        }
+        ZeroCopyString zeroCopyString;
+        std::string copyString;
+    };
     VersionedKVStore();
     ~VersionedKVStore();
 
-    bool get(const std::string &key, std::pair<Timestamp, std::string> &value);
-    bool get(const std::string &key, const Timestamp &t, std::pair<Timestamp, std::string> &value);
+    bool get(const std::string &key, std::pair<Timestamp, KVStoreValue> &value);
+    bool get(const std::string &key, const Timestamp &t, std::pair<Timestamp, KVStoreValue> &value);
     bool getRange(const std::string &key, const Timestamp &t, std::pair<Timestamp, Timestamp> &range);
     bool getLastRead(const std::string &key, Timestamp &readTime);
     bool getLastRead(const std::string &key, const Timestamp &t, Timestamp &readTime);
-    void put(const std::string &key, const std::string &value, const Timestamp &t);
+    void put(const std::string &key, const KVStoreValue &value, const Timestamp &t);
     void commitGet(const std::string &key, const Timestamp &readTime, const Timestamp &commit);
 
 private:
+
     struct VersionedValue {
         Timestamp write;
-        std::string value;
+        KVStoreValue value;
 
         VersionedValue(Timestamp commit) : write(commit), value("tmp") { };
-        VersionedValue(Timestamp commit, std::string val) : write(commit), value(val) { };
+        VersionedValue(Timestamp commit, KVStoreValue val) : write(commit), value(val) { };
 
         friend bool operator> (const VersionedValue &v1, const VersionedValue &v2) {
             return v1.write > v2.write;

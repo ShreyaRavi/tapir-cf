@@ -41,6 +41,8 @@ Server::Server(bool linearizable, void* arena, void* connection, bool useCornfla
     : useCornflakes(useCornflakes), arena(arena), connection(connection)
 {
     store = new Store(linearizable);
+    //store->Put();
+
 }
 
 Server::~Server()
@@ -323,6 +325,71 @@ main(int argc, char **argv)
     tapirstore::Server server(linearizable, arena, connection, useCornflakes);
 
     replication::ir::IRReplica replica(config, index, &transport, &server, connection, arena, useCornflakes);
+
+    size_t key_size = 64;
+    size_t value_size = 512;
+    size_t num_keys = nKeys;
+
+    void* rust_backing_db;
+    void* mempool_ids_ptr;
+    int ret = Mlx5Connection_load_retwis_db(
+                connection,
+                key_size,
+                value_size,
+                num_keys,
+                &rust_backing_db,
+                &mempool_ids_ptr);
+    if (ret != 0) {
+        printf("Error: Could not run retwis Mlx5Connection_load_retwis_db\n");
+        exit(1);
+    }
+
+    void *db_keys_vec;
+    size_t db_keys_len = 0;
+    Mlx5Connection_get_db_keys_vec(rust_backing_db, &db_keys_vec, &db_keys_len);
+    if (db_keys_vec == NULL) {
+        printf("Error: Could not get iterator over rust backing db.\n");
+        exit(1);
+    } else {
+        printf("Got rust backing db with len %lu\n", db_keys_len);
+    }
+    void *key_ptr = NULL;
+    size_t key_len = 0;
+    void *value_ptr = NULL;
+    size_t value_len = 0;
+    void *value_box_ptr = NULL;
+
+    for (size_t key_idx = 0; key_idx < db_keys_len; key_idx++) {
+        Mlx5Connection_get_db_value_at(rust_backing_db, db_keys_vec, key_idx, &key_ptr, &key_len, &value_ptr, &value_len, &value_box_ptr);
+        if (key_ptr != NULL && value_ptr != NULL) {
+            if (useCornflakes) {
+                /* for keys - just use plain redis sds strings */
+                // robj *k = createStringObject((char *)key_ptr, key_len);
+                // robj *v = createZeroCopyStringObject((unsigned char *)value_ptr, value_len, value_box_ptr);
+                key = string((char*) key_ptr, key_len);
+                value = VersionedKVStore::KVStoreValue((unsigned char *)value_ptr, value_len, value_box_ptr);
+                server.Load(key, value, Timestamp());
+            } else {
+                /* for keys and values - just use plain redis sds strings */
+                // void *k = createStringObject((char *)key_ptr, key_len);
+                
+                // normal string key
+                // normal string value
+
+                // NOTE: smartptr is ptr to box of mlx5buffer
+
+                key = string((char*) key_ptr, key_len);
+                value = VersionedKVStore::KVStoreValue((char*) value_ptr, value_len);
+                server.Load(key, value, Timestamp());
+                Mlx5Connection_free_datapath_buffer(value_box_ptr);
+                
+            }
+        } else {
+            printf("ERROR: Could not load value for key %lu from kv store", key_idx);
+        }
+    }
+
+    Mlx5Connection_drop_db(rust_backing_db);
 
     if (keyPath) {
         string key;
