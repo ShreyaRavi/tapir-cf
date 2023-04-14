@@ -37,8 +37,8 @@ namespace tapirstore {
 using namespace std;
 using namespace proto;
 
-Server::Server(bool linearizable, void* arena, void* connection, bool useCornflakes)
-    : useCornflakes(useCornflakes), arena(arena), connection(connection)
+Server::Server(bool linearizable, void* arena, void* connection, void* mempool_ids_ptr,  bool useCornflakes)
+    : useCornflakes(useCornflakes), arena(arena), connection(connection), mempool_ids_ptr(mempool_ids_ptr)
 {
     store = new Store(linearizable);
     //store->Put();
@@ -134,20 +134,20 @@ Server::UnloggedUpcall(const string &str1, void* reply)
             Reply_get_mut_result(reply, &tapirReply);
 
             if (request.get().has_timestamp()) {
-                pair<Timestamp, string> val;
+                pair<Timestamp, VersionedKVStore::KVStoreValue> val;
                 status = store->Get(request.txnid(), request.get().key(),
                                 request.get().timestamp(), val);
                 if (status == 0) {
                     void* cfString;
-                    CFString_new((unsigned char*) val.second.c_str(), val.second.length(), connection, arena, &cfString);
+                    CFString_new(val.second.zeroCopyString.ptr, val.second.zeroCopyString.len, connection, arena, &cfString);
                     TapirReply_set_value(tapirReply, cfString);
                 }
             } else {
-                pair<Timestamp, string> val;
+                pair<Timestamp, VersionedKVStore::KVStoreValue> val;
                 status = store->Get(request.txnid(), request.get().key(), val);
                 if (status == 0) {
                     void* cfString;
-                    CFString_new((unsigned char*) val.second.c_str(), val.second.length(), connection, arena, &cfString);
+                    CFString_new(val.second.zeroCopyString.ptr, val.second.zeroCopyString.len, connection, arena, &cfString);
                     TapirReply_set_value(tapirReply, cfString);
                     void* timestamp;
                     TapirReply_get_mut_timestamp(tapirReply, &timestamp);
@@ -160,17 +160,17 @@ Server::UnloggedUpcall(const string &str1, void* reply)
             replication::Reply* replicationReply = (replication::Reply*) reply;
             TapirReply tapirReply;
             if (request.get().has_timestamp()) {
-                pair<Timestamp, string> val;
+                pair<Timestamp, VersionedKVStore::KVStoreValue> val;
                 status = store->Get(request.txnid(), request.get().key(),
                                 request.get().timestamp(), val);
                 if (status == 0) {
-                    tapirReply.set_value(val.second);
+                    tapirReply.set_value(val.second.copyString);
                 }
             } else {
-                pair<Timestamp, string> val;
+                pair<Timestamp, VersionedKVStore::KVStoreValue> val;
                 status = store->Get(request.txnid(), request.get().key(), val);
                 if (status == 0) {
-                    tapirReply.set_value(val.second);
+                    tapirReply.set_value(val.second.copyString);
                     val.first.serialize(tapirReply.mutable_timestamp());
                 }
             }
@@ -198,7 +198,7 @@ Server::Merge(const std::map<opid_t, std::vector<RecordEntry>> &d,
 }
 
 void
-Server::Load(const string &key, const string &value, const Timestamp timestamp)
+Server::Load(const string &key, const VersionedKVStore::KVStoreValue  &value, const Timestamp timestamp)
 {
     store->Load(key, value, timestamp);
 }
@@ -320,11 +320,6 @@ main(int argc, char **argv)
             64   // max_entries
         );
     bool useCornflakes = true;
-    CFTransport transport(connection, arena);
-
-    tapirstore::Server server(linearizable, arena, connection, useCornflakes);
-
-    replication::ir::IRReplica replica(config, index, &transport, &server, connection, arena, useCornflakes);
 
     size_t key_size = 64;
     size_t value_size = 512;
@@ -343,6 +338,14 @@ main(int argc, char **argv)
         printf("Error: Could not run retwis Mlx5Connection_load_retwis_db\n");
         exit(1);
     }
+
+
+    CFTransport transport(connection, arena);
+
+    tapirstore::Server server(linearizable, arena, connection, mempool_ids_ptr, useCornflakes);
+
+    replication::ir::IRReplica replica(config, index, &transport, &server, connection, arena, useCornflakes);
+ 
 
     void *db_keys_vec;
     size_t db_keys_len = 0;
@@ -366,8 +369,8 @@ main(int argc, char **argv)
                 /* for keys - just use plain redis sds strings */
                 // robj *k = createStringObject((char *)key_ptr, key_len);
                 // robj *v = createZeroCopyStringObject((unsigned char *)value_ptr, value_len, value_box_ptr);
-                key = string((char*) key_ptr, key_len);
-                value = VersionedKVStore::KVStoreValue((unsigned char *)value_ptr, value_len, value_box_ptr);
+                string key = string((char*) key_ptr, key_len);
+                VersionedKVStore::KVStoreValue value = VersionedKVStore::KVStoreValue((unsigned char *)value_ptr, value_len, value_box_ptr);
                 server.Load(key, value, Timestamp());
             } else {
                 /* for keys and values - just use plain redis sds strings */
@@ -378,8 +381,8 @@ main(int argc, char **argv)
 
                 // NOTE: smartptr is ptr to box of mlx5buffer
 
-                key = string((char*) key_ptr, key_len);
-                value = VersionedKVStore::KVStoreValue((char*) value_ptr, value_len);
+                string key = string((char*) key_ptr, key_len);
+                VersionedKVStore::KVStoreValue value = VersionedKVStore::KVStoreValue((char*) value_ptr, value_len);
                 server.Load(key, value, Timestamp());
                 Mlx5Connection_free_datapath_buffer(value_box_ptr);
                 
@@ -410,7 +413,7 @@ main(int argc, char **argv)
             }
 
             if (hash % maxShard == myShard) {
-                server.Load(key, "null", Timestamp());
+                server.Load(key, VersionedKVStore::KVStoreValue("null"), Timestamp());
             }
         }
         in.close();

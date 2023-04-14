@@ -47,7 +47,7 @@ using RecordEntry = replication::ir::RecordEntry;
 class Server : public replication::ir::IRAppReplica
 {
 public:
-    Server(bool linearizable, void* arena = NULL, void* connection = NULL, bool useCornflakes = false);
+    Server(bool linearizable, void* arena = NULL, void* connection = NULL, void* mempool_ids_ptr = NULL, bool useCornflakes = false);
     virtual ~Server();
 
     // Invoke inconsistent operation, no return value
@@ -68,13 +68,14 @@ public:
         const std::map<opid_t, std::vector<RecordEntry>> &u,
         const std::map<opid_t, std::string> &majority_results_in_d) override;
 
-    void Load(const string &key, const string &value, const Timestamp timestamp);
+    void Load(const string &key, const VersionedKVStore::KVStoreValue &value, const Timestamp timestamp);
 
 private:
     TxnStore *store;
     bool useCornflakes;
     void* arena;
     void* connection;
+    void* mempool_ids_ptr;
 
     enum Operation {
         GET = 1,

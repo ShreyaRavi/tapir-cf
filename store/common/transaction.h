@@ -13,6 +13,7 @@
 #include "lib/message.h"
 #include "store/common/timestamp.h"
 #include "store/common/common-proto.pb.h"
+#include "store/common/backend/versionstore.h"
 
 #include <unordered_map>
 
@@ -33,18 +34,19 @@ private:
     std::unordered_map<std::string, Timestamp> readSet;
 
     // map between key and value(s)
-    std::unordered_map<std::string, std::string> writeSet;
+    std::unordered_map<std::string, VersionedKVStore::KVStoreValue> writeSet;
+    bool useCornflakes;
 
 public:
     Transaction();
-    Transaction(const TransactionMessage &msg);
+    Transaction(const TransactionMessage &msg, void* connection = NULL, void* mempool_ids_ptr = NULL, bool useCornflakes = false);
     ~Transaction();
 
     const std::unordered_map<std::string, Timestamp>& getReadSet() const;
-    const std::unordered_map<std::string, std::string>& getWriteSet() const;
+    const std::unordered_map<std::string, VersionedKVStore::KVStoreValue>& getWriteSet() const;
     
     void addReadSet(const std::string &key, const Timestamp &readTime);
-    void addWriteSet(const std::string &key, const std::string &value);
+    void addWriteSet(const std::string &key, const VersionedKVStore::KVStoreValue &value);
     void serialize(TransactionMessage *msg) const;
 };
 

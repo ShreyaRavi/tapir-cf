@@ -38,6 +38,7 @@
 #include "lib/message.h"
 #include "store/common/timestamp.h"
 #include "store/common/transaction.h"
+#include "store/common/backend/versionstore.h"
 
 class TxnStore
 {
@@ -48,14 +49,14 @@ public:
 
     // add key to read set
     virtual int Get(uint64_t id, const std::string &key,
-        std::pair<Timestamp, std::string> &value);
+        std::pair<Timestamp, VersionedKVStore::KVStoreValue> &value);
 
     virtual int Get(uint64_t id, const std::string &key,
-        const Timestamp &timestamp, std::pair<Timestamp, std::string> &value);
+        const Timestamp &timestamp, std::pair<Timestamp, VersionedKVStore::KVStoreValue> &value);
 
     // add key to write set
     virtual int Put(uint64_t id, const std::string &key,
-        const std::string &value);
+        const VersionedKVStore::KVStoreValue &value);
 
     // check whether we can commit this transaction (and lock the read/write set)
     virtual int Prepare(uint64_t id, const Transaction &txn);
@@ -70,7 +71,7 @@ public:
     virtual void Abort(uint64_t id, const Transaction &txn = Transaction());
 
     // load keys
-    virtual void Load(const std::string &key, const std::string &value,
+    virtual void Load(const std::string &key, const VersionedKVStore::KVStoreValue &value,
         const Timestamp &timestamp);
 };
 

@@ -43,6 +43,7 @@ class VersionedKVStore
 {
 public:
     struct ZeroCopyString {
+        ZeroCopyString() : len(0), ptr(NULL), smart_ptr(NULL) {};
         ZeroCopyString(const unsigned char *ptr, size_t len, void *smart_ptr) {
             this->ptr = ptr;
             this->len = len;
@@ -60,6 +61,10 @@ public:
         KVStoreValue(const char* ptr, size_t len) {
             this->copyString = std::string(ptr, len);
         }
+        KVStoreValue(std::string str) {
+            this->copyString = str;
+        }
+        KVStoreValue() {}
         ZeroCopyString zeroCopyString;
         std::string copyString;
     };
@@ -80,7 +85,7 @@ private:
         Timestamp write;
         KVStoreValue value;
 
-        VersionedValue(Timestamp commit) : write(commit), value("tmp") { };
+        VersionedValue(Timestamp commit) : write(commit), value(KVStoreValue("tmp")) { };
         VersionedValue(Timestamp commit, KVStoreValue val) : write(commit), value(val) { };
 
         friend bool operator> (const VersionedValue &v1, const VersionedValue &v2) {

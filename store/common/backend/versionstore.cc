@@ -60,7 +60,7 @@ VersionedKVStore::getValue(const string &key, const Timestamp &t, set<VersionedK
 /* Returns the most recent value and timestamp for given key.
  * Error if key does not exist. */
 bool
-VersionedKVStore::get(const string &key, pair<Timestamp, string> &value)
+VersionedKVStore::get(const string &key, pair<Timestamp, KVStoreValue> &value)
 {
     // check for existence of key in store
     if (inStore(key)) {
@@ -74,7 +74,7 @@ VersionedKVStore::get(const string &key, pair<Timestamp, string> &value)
 /* Returns the value valid at given timestamp.
  * Error if key did not exist at the timestamp. */
 bool
-VersionedKVStore::get(const string &key, const Timestamp &t, pair<Timestamp, string> &value)
+VersionedKVStore::get(const string &key, const Timestamp &t, pair<Timestamp, KVStoreValue> &value)
 {
     if (inStore(key)) {
         set<VersionedValue>::iterator it;
@@ -108,7 +108,7 @@ VersionedKVStore::getRange(const string &key, const Timestamp &t,
 }
 
 void
-VersionedKVStore::put(const string &key, const string &value, const Timestamp &t)
+VersionedKVStore::put(const string &key, const KVStoreValue &value, const Timestamp &t)
 {
     // Key does not exist. Create a list and an entry.
     store[key].insert(VersionedValue(t, value));

@@ -53,12 +53,12 @@ public:
 
     // Overriding from TxnStore
     void Begin(uint64_t id);
-    int Get(uint64_t id, const std::string &key, std::pair<Timestamp, std::string> &value);
-    int Get(uint64_t id, const std::string &key, const Timestamp &timestamp, std::pair<Timestamp, std::string> &value);
+    int Get(uint64_t id, const std::string &key, std::pair<Timestamp, VersionedKVStore::KVStoreValue> &value);
+    int Get(uint64_t id, const std::string &key, const Timestamp &timestamp, std::pair<Timestamp, VersionedKVStore::KVStoreValue> &value);
     int Prepare(uint64_t id, const Transaction &txn, const Timestamp &timestamp, Timestamp &proposed);
     void Commit(uint64_t id, uint64_t timestamp = 0);
     void Abort(uint64_t id, const Transaction &txn = Transaction());
-    void Load(const std::string &key, const std::string &value, const Timestamp &timestamp);
+    void Load(const std::string &key, const VersionedKVStore::KVStoreValue &value, const Timestamp &timestamp);
 
 private:
     // Are we running in linearizable (vs serializable) mode?

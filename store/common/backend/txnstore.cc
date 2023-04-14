@@ -39,7 +39,7 @@ TxnStore::TxnStore() {}
 TxnStore::~TxnStore() {}
 
 int
-TxnStore::Get(uint64_t id, const string &key, pair<Timestamp, string> &value)
+TxnStore::Get(uint64_t id, const string &key, pair<Timestamp, VersionedKVStore::KVStoreValue> &value)
 {
     Panic("Unimplemented GET");
     return 0;
@@ -47,14 +47,14 @@ TxnStore::Get(uint64_t id, const string &key, pair<Timestamp, string> &value)
 
 int
 TxnStore::Get(uint64_t id, const string &key, const Timestamp &timestamp,
-    pair<Timestamp, string> &value)
+    pair<Timestamp, VersionedKVStore::KVStoreValue> &value)
 {
     Panic("Unimplemented GET");
     return 0;
 }
 
 int
-TxnStore::Put(uint64_t id, const string &key, const string &value)
+TxnStore::Put(uint64_t id, const string &key, const VersionedKVStore::KVStoreValue &value)
 {
     Panic("Unimplemented PUT");
     return 0;
@@ -88,7 +88,7 @@ TxnStore::Abort(uint64_t id, const Transaction &txn)
 }
 
 void
-TxnStore::Load(const string &key, const string &value, const Timestamp &timestamp)
+TxnStore::Load(const string &key, const VersionedKVStore::KVStoreValue &value, const Timestamp &timestamp)
 {
     Panic("Unimplemented LOAD");
 }

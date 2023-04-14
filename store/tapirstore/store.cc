@@ -40,13 +40,13 @@ Store::Store(bool linearizable) : linearizable(linearizable), store() { }
 Store::~Store() { }
 
 int
-Store::Get(uint64_t id, const string &key, pair<Timestamp,string> &value)
+Store::Get(uint64_t id, const string &key, pair<Timestamp,VersionedKVStore::KVStoreValue> &value)
 {
     Debug("[%lu] GET %s", id, key.c_str());
 
     bool ret = store.get(key, value);
     if (ret) {
-        Debug("Value: %s at <%lu, %lu>", value.second.c_str(), value.first.getTimestamp(), value.first.getID());
+        //Debug("Value: %s at <%lu, %lu>", value.second.c_str(), value.first.getTimestamp(), value.first.getID());
         return REPLY_OK;
     } else {
         return REPLY_FAIL;
@@ -54,7 +54,7 @@ Store::Get(uint64_t id, const string &key, pair<Timestamp,string> &value)
 }
 
 int
-Store::Get(uint64_t id, const string &key, const Timestamp &timestamp, pair<Timestamp,string> &value)
+Store::Get(uint64_t id, const string &key, const Timestamp &timestamp, pair<Timestamp,VersionedKVStore::KVStoreValue> &value)
 {
     Debug("[%lu] GET %s at <%lu, %lu>", id, key.c_str(), timestamp.getTimestamp(), timestamp.getID());
 
@@ -139,7 +139,7 @@ Store::Prepare(uint64_t id, const Transaction &txn, const Timestamp &timestamp, 
 
     // check for conflicts with the write set
     for (auto &write : txn.getWriteSet()) {
-        pair<Timestamp, string> val;
+        pair<Timestamp, VersionedKVStore::KVStoreValue> val;
         // if this key is in the store
         if ( store.get(write.first, val) ) {
             Timestamp lastRead;
@@ -252,7 +252,7 @@ Store::Abort(uint64_t id, const Transaction &txn)
 }
 
 void
-Store::Load(const string &key, const string &value, const Timestamp &timestamp)
+Store::Load(const string &key, const VersionedKVStore::KVStoreValue &value, const Timestamp &timestamp)
 {
     store.put(key, value, timestamp);
 }

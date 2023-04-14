@@ -56,7 +56,7 @@ BufferClient::Get(const string &key, Promise *promise)
 {
     // Read your own writes, check the write set first.
     if (txn.getWriteSet().find(key) != txn.getWriteSet().end()) {
-        promise->Reply(REPLY_OK, (txn.getWriteSet().find(key))->second);
+        promise->Reply(REPLY_OK, (txn.getWriteSet().find(key))->second.copyString);
         return;
     }
 
