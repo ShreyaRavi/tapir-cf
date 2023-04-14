@@ -8,8 +8,6 @@
 
 #include "store/common/truetime.h"
 #include "store/common/frontend/client.h"
-#include "store/strongstore/client.h"
-#include "store/weakstore/client.h"
 #include "store/tapirstore/client.h"
 #include <algorithm>
 
@@ -40,12 +38,8 @@ main(int argc, char **argv)
     enum {
         MODE_UNKNOWN,
         MODE_TAPIR,
-        MODE_WEAK,
-        MODE_STRONG
     } mode = MODE_UNKNOWN;
     
-    // Mode for strongstore.
-    strongstore::Mode strongmode;
 
     int opt;
     while ((opt = getopt(argc, argv, "c:d:N:k:f:m:e:s:z:r:")) != -1) {
@@ -149,20 +143,6 @@ main(int argc, char **argv)
                 mode = MODE_TAPIR;
             } else if (strcasecmp(optarg, "txn-s") == 0) {
                 mode = MODE_TAPIR;
-            } else if (strcasecmp(optarg, "qw") == 0) {
-                mode = MODE_WEAK;
-            } else if (strcasecmp(optarg, "occ") == 0) {
-                mode = MODE_STRONG;
-                strongmode = strongstore::MODE_OCC;
-            } else if (strcasecmp(optarg, "lock") == 0) {
-                mode = MODE_STRONG;
-                strongmode = strongstore::MODE_LOCK;
-            } else if (strcasecmp(optarg, "span-occ") == 0) {
-                mode = MODE_STRONG;
-                strongmode = strongstore::MODE_SPAN_OCC;
-            } else if (strcasecmp(optarg, "span-lock") == 0) {
-                mode = MODE_STRONG;
-                strongmode = strongstore::MODE_SPAN_LOCK;
             } else {
                 fprintf(stderr, "unknown mode '%s'\n", optarg);
                 exit(0);
@@ -179,12 +159,6 @@ main(int argc, char **argv)
     if (mode == MODE_TAPIR) {
         client = new tapirstore::Client(configPath, nShards,
                     closestReplica, TrueTime(skew, error));
-    } else if (mode == MODE_WEAK) {
-        client = new weakstore::Client(configPath, nShards,
-                    closestReplica);
-    } else if (mode == MODE_STRONG) {
-        client = new strongstore::Client(strongmode, configPath,
-                    nShards, closestReplica, TrueTime(skew, error));
     } else {
         fprintf(stderr, "option -m is required\n");
         exit(0);
