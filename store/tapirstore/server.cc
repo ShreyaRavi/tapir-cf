@@ -86,7 +86,7 @@ Server::ExecConsensusUpcall(const string &str1, void* reply)
     switch (op) {
     case PREPARE:
         status = store->Prepare(request.txnid(),
-                                Transaction(request.prepare().txn()),
+                                Transaction(request.prepare().txn(), connection, mempool_ids_ptr, true),
                                 Timestamp(request.prepare().timestamp()),
                                 proposed);
         if (useCornflakes) {
@@ -139,6 +139,7 @@ Server::UnloggedUpcall(const string &str1, void* reply)
                                 request.get().timestamp(), val);
                 if (status == 0) {
                     void* cfString;
+
                     CFString_new(val.second.zeroCopyString.ptr, val.second.zeroCopyString.len, connection, arena, &cfString);
                     TapirReply_set_value(tapirReply, cfString);
                 }
@@ -149,9 +150,10 @@ Server::UnloggedUpcall(const string &str1, void* reply)
                     void* cfString;
                     CFString_new(val.second.zeroCopyString.ptr, val.second.zeroCopyString.len, connection, arena, &cfString);
                     TapirReply_set_value(tapirReply, cfString);
+  
                     void* timestamp;
                     TapirReply_get_mut_timestamp(tapirReply, &timestamp);
-                    val.first.serialize(timestamp);
+                    val.first.serialize(timestamp, true);
                 }
             }
             TapirReply_set_status(tapirReply, status);
@@ -317,6 +319,8 @@ main(int argc, char **argv)
             1024, // max_packet_size
             64   // max_entries
         );
+
+    Mlx5Connection_set_copying_threshold(connection, 0);
     bool useCornflakes = true;
 
     size_t key_size = 64;

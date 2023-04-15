@@ -162,7 +162,7 @@ SerializeMessage(const ::google::protobuf::Message &m,
         //printf("serializing ConfirmMessage\n"); 
         msg_type = CONFIRM_MESSAGE;
     } else if (type == "replication.ir.proto.UnloggedReplyMessage") {
-        printf("serializing UnloggedReplyMessage\n");
+        //printf("serializing UnloggedReplyMessage\n");
         msg_type = UNLOGGED_REPLY_MESSAGE;
     }
 
@@ -231,19 +231,19 @@ CFTransport::SendCFMessageInternal(TransportReceiver *src,
     uint32_t msg_id = dynamic_cast<const CFTransportAddress &>(dst).msg_id;
     switch(type) {
         case REPLY_INCONSISTENT_MESSAGE:
-            printf("serializing ReplyInconsistentMessage\n");
+            //printf("serializing ReplyInconsistentMessage\n");
             Mlx5Connection_ReplyInconsistentMessage_queue_cornflakes_arena_object(connection, msg_id, conn_id, m, true);
             break;
         case REPLY_CONSENSUS_MESSAGE:
-            printf("serializing ReplyConsensusMessage\n");  
+            //printf("serializing ReplyConsensusMessage\n");  
             Mlx5Connection_ReplyConsensusMessage_queue_cornflakes_arena_object(connection, msg_id, conn_id, m, true);
             break;
         case CONFIRM_MESSAGE:
-            printf("serializing ConfirmMessage\n");  
+            //printf("serializing ConfirmMessage\n");  
             Mlx5Connection_ConfirmMessage_queue_cornflakes_arena_object(connection, msg_id, conn_id, m, true);
             break;
         case UNLOGGED_REPLY_MESSAGE:
-            printf("serializing UnloggedReplyMessage\n");  
+            //printf("serializing UnloggedReplyMessage\n");  
             Mlx5Connection_UnloggedReplyMessage_queue_cornflakes_arena_object(connection, msg_id, conn_id, m, true);
             break;
         default:
