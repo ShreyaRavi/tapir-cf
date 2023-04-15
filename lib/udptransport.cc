@@ -541,6 +541,12 @@ UDPTransport::Stop()
 static void
 DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unordered_map<uint32_t, MessageType>& respTypeMap, void* arena, bool useCornflakes)
 {
+    //printf("Decode packet of size: %lu.\n", sz);
+    //printf("[");
+    //for (size_t i = 0; i < sz; i++) {
+    //    printf("%u, ", (unsigned int) buf[i]);
+    //}
+    //printf("]\n");
     const char *ptr = buf;
     // first 4 bytes: msg id
     uint32_t msgId = *((uint32_t *)ptr);
@@ -687,6 +693,9 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
             const unsigned char* replyValue;
             uintptr_t replyLen;
             CFString_unpack(cfValue, &replyValue, &replyLen);
+            //printf("unlogged reply message value len: %lu\n",replyLen );
+            //string replyStr((char*)replyValue, replyLen);
+            //printf("value in unlogged reply message tapir reply: %s\n", replyStr.c_str());
 
             void* timestamp;
             TapirReply_get_mut_timestamp(tapirReply, &timestamp);
@@ -708,6 +717,8 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
             // maybe construct the protobuf and serialize it to string and set that to msg.
             type = replyProto.GetTypeName();
             msg = replyProto.SerializeAsString();
+        } else {
+            Panic("Cornflakes decoding unkown message type.\n");
         }
     } else {
         int msg_type = *((int *)ptr);
