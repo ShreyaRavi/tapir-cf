@@ -20,13 +20,13 @@ double alpha = -1;
 double *zipf;
 
 vector<string> keys;
+vector<string> values;
 int nKeys = 100;
 
 int
 main(int argc, char **argv)
 {
     const char *configPath = NULL;
-    const char *keysPath = NULL;
     int duration = 10;
     int nShards = 1;
     int tLen = 10;
@@ -54,7 +54,6 @@ main(int argc, char **argv)
 
         case 'f': // Generated keys path
         { 
-            keysPath = optarg;
             break;
         }
 
@@ -188,20 +187,22 @@ main(int argc, char **argv)
         exit(0);
     }
 
-    // Read in the keys from a file.
-    string key, value;
-    ifstream in;
-    in.open(keysPath);
-    if (!in) {
-        fprintf(stderr, "Could not read keys from: %s\n", keysPath);
-        exit(0);
-    }
-    for (int i = 0; i < nKeys; i++) {
-        getline(in, key);
-        keys.push_back(key);
-    }
-    in.close();
 
+    // Generate keys.
+    size_t keySize = 64;
+    size_t valueSize = 64;
+
+    for (int i = 0; i < nKeys; i++) {
+        string keyPrefix = "key_";
+        string valuePrefix = "value_";
+        string indexStr = std::to_string(i);
+        string keyFiller(keySize - keyPrefix.length() - indexStr.length(), 'a');
+        string valueFiller(valueSize - valuePrefix.length() - indexStr.length(), 'a');
+        keys.push_back(keyPrefix + indexStr + keyFiller);
+        values.push_back(valuePrefix + indexStr + valueFiller);
+    } 
+
+    string key, value;
 
     struct timeval t0, t1, t2, t3, t4;
 
@@ -229,11 +230,12 @@ main(int argc, char **argv)
         beginLatency += ((t1.tv_sec - t4.tv_sec)*1000000 + (t1.tv_usec - t4.tv_usec));
         
         for (int j = 0; j < tLen; j++) {
-            key = keys[rand_key()];
+            int rand_key_idx = rand_key();
+            key = keys[rand_key_idx];
 
             if (rand() % 100 < wPer) {
                 gettimeofday(&t3, NULL);
-                client->Put(key, key);
+                client->Put(key, values[rand_key_idx]);
                 gettimeofday(&t4, NULL);
                 
                 putCount++;

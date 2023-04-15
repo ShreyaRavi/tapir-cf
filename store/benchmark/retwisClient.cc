@@ -165,7 +165,7 @@ main(int argc, char **argv)
 
     // Generate keys.
     size_t keySize = 64;
-    size_t valueSize = 512;
+    size_t valueSize = 64;
 
     for (int i = 0; i < nKeys; i++) {
         string keyPrefix = "key_";
@@ -284,8 +284,9 @@ main(int argc, char **argv)
                 t1.tv_usec, t2.tv_sec, t2.tv_usec, latency, status?1:0, ttype, retries);
         fprintf(stderr, "\n");
 
-        if (((t2.tv_sec-t0.tv_sec)*1000000 + (t2.tv_usec-t0.tv_usec)) > duration*1000000) 
+        if (((t2.tv_sec-t0.tv_sec)*1000000 + (t2.tv_usec-t0.tv_usec)) > duration*1000000) {
             break;
+        } 
     }
 
     fprintf(stderr, "# Client exiting..\n");
