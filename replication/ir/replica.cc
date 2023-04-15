@@ -615,6 +615,8 @@ IRReplica::HandleUnlogged(const TransportAddress &remote,
     } else {
         Reply res;
         app->UnloggedUpcall(msg.req().op(), &res);
+        printf("sending protobuf reply to get request\n");
+        printf("value being sent: %s\n", res.result().value().c_str());
         UnloggedReplyMessage reply;
         *reply.mutable_reply() = res;
         reply.set_clientreqid(msg.req().clientreqid());

@@ -153,12 +153,16 @@ SerializeMessage(const ::google::protobuf::Message &m,
     } else if (type == "replication.ir.proto.UnloggedRequestMessage") {
         msg_type = UNLOGGED_REQUEST_MESSAGE;
     } else if (type == "replication.ir.proto.ReplyInconsistentMessage") {
+        //printf("serializing ReplyInconsistentMessage\n");
         msg_type = REPLY_INCONSISTENT_MESSAGE;
     } else if (type == "replication.ir.proto.ReplyConsensusMessage") {
+        //printf("serializing ReplyConsensusMessage\n"); 
         msg_type = REPLY_CONSENSUS_MESSAGE;
     } else if (type == "replication.ir.proto.ConfirmMessage") {
+        //printf("serializing ConfirmMessage\n"); 
         msg_type = CONFIRM_MESSAGE;
     } else if (type == "replication.ir.proto.UnloggedReplyMessage") {
+        printf("serializing UnloggedReplyMessage\n");
         msg_type = UNLOGGED_REPLY_MESSAGE;
     }
 
@@ -203,12 +207,10 @@ CFTransport::SendMessageInternal(TransportReceiver *src,
     }
     uintptr_t conn_id = dynamic_cast<const CFTransportAddress &>(dst).conn_id;
     uint32_t msg_id = dynamic_cast<const CFTransportAddress &>(dst).msg_id;
-
     // Serialize message
     std::unique_ptr<char[]> unique_buf;
     size_t msgLen = SerializeMessage(m, &unique_buf);
     char *buf = unique_buf.get(); 
-
     uint32_t status = Mlx5Connection_queue_single_buffer_with_copy(connection, msg_id, conn_id, (uint8_t*)buf, msgLen, true);
     if (status != 0) {
         Panic("Error queuing single buffer.");
@@ -229,15 +231,19 @@ CFTransport::SendCFMessageInternal(TransportReceiver *src,
     uint32_t msg_id = dynamic_cast<const CFTransportAddress &>(dst).msg_id;
     switch(type) {
         case REPLY_INCONSISTENT_MESSAGE:
+            printf("serializing ReplyInconsistentMessage\n");
             Mlx5Connection_ReplyInconsistentMessage_queue_cornflakes_arena_object(connection, msg_id, conn_id, m, true);
             break;
         case REPLY_CONSENSUS_MESSAGE:
+            printf("serializing ReplyConsensusMessage\n");  
             Mlx5Connection_ReplyConsensusMessage_queue_cornflakes_arena_object(connection, msg_id, conn_id, m, true);
             break;
         case CONFIRM_MESSAGE:
+            printf("serializing ConfirmMessage\n");  
             Mlx5Connection_ConfirmMessage_queue_cornflakes_arena_object(connection, msg_id, conn_id, m, true);
             break;
         case UNLOGGED_REPLY_MESSAGE:
+            printf("serializing UnloggedReplyMessage\n");  
             Mlx5Connection_UnloggedReplyMessage_queue_cornflakes_arena_object(connection, msg_id, conn_id, m, true);
             break;
         default:

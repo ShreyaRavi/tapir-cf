@@ -212,7 +212,6 @@ main(int argc, char **argv)
     int index = -1;
     unsigned int myShard = 0, maxShard = 1, nKeys = 1;
     const char *configPath = NULL;
-    const char *keyPath = NULL;
     bool linearizable = true;
 
     // Parse arguments
@@ -281,7 +280,6 @@ main(int argc, char **argv)
 
         case 'f':   // Load keys from file
         {
-            keyPath = optarg;
             break;
         }
 
@@ -322,7 +320,7 @@ main(int argc, char **argv)
     bool useCornflakes = true;
 
     size_t key_size = 64;
-    size_t value_size = 512;
+    size_t value_size = 64;
     size_t num_keys = nKeys;
 
     void* rust_backing_db;
@@ -365,27 +363,21 @@ main(int argc, char **argv)
     for (size_t key_idx = 0; key_idx < db_keys_len; key_idx++) {
         Mlx5Connection_get_db_value_at(rust_backing_db, db_keys_vec, key_idx, &key_ptr, &key_len, &value_ptr, &value_len, &value_box_ptr);
         if (key_ptr != NULL && value_ptr != NULL) {
-            if (useCornflakes) {
-                /* for keys - just use plain redis sds strings */
-                // robj *k = createStringObject((char *)key_ptr, key_len);
-                // robj *v = createZeroCopyStringObject((unsigned char *)value_ptr, value_len, value_box_ptr);
-                string key = string((char*) key_ptr, key_len);
-                VersionedKVStore::KVStoreValue value = VersionedKVStore::KVStoreValue((unsigned char *)value_ptr, value_len, value_box_ptr);
-                server.Load(key, value, Timestamp());
-            } else {
-                /* for keys and values - just use plain redis sds strings */
-                // void *k = createStringObject((char *)key_ptr, key_len);
-                
-                // normal string key
-                // normal string value
 
-                // NOTE: smartptr is ptr to box of mlx5buffer
-
-                string key = string((char*) key_ptr, key_len);
-                VersionedKVStore::KVStoreValue value = VersionedKVStore::KVStoreValue((char*) value_ptr, value_len);
-                server.Load(key, value, Timestamp());
-                Mlx5Connection_free_datapath_buffer(value_box_ptr);
-                
+            string key = string((char*) key_ptr, key_len);
+            uint64_t hash = 5381;
+            for (unsigned int j = 0; j < key.length(); j++) {
+                hash = ((hash << 5) + hash) + (uint64_t)((char*)key_ptr)[j];
+            }
+            if (hash % maxShard == myShard) {
+                if (useCornflakes) {
+                    VersionedKVStore::KVStoreValue value = VersionedKVStore::KVStoreValue((unsigned char *)value_ptr, value_len, value_box_ptr);
+                    server.Load(key, value, Timestamp()); 
+                } else {
+                    VersionedKVStore::KVStoreValue value = VersionedKVStore::KVStoreValue((char*) value_ptr, value_len);
+                    server.Load(key, value, Timestamp());
+                    Mlx5Connection_free_datapath_buffer(value_box_ptr);
+                }
             }
         } else {
             printf("ERROR: Could not load value for key %lu from kv store", key_idx);
@@ -393,31 +385,6 @@ main(int argc, char **argv)
     }
 
     Mlx5Connection_drop_db(rust_backing_db);
-
-    if (keyPath) {
-        string key;
-        std::ifstream in;
-        in.open(keyPath);
-        if (!in) {
-            fprintf(stderr, "Could not read keys from: %s\n", keyPath);
-            exit(0);
-        }
-
-        for (unsigned int i = 0; i < nKeys; i++) {
-            getline(in, key);
-
-            uint64_t hash = 5381;
-            const char* str = key.c_str();
-            for (unsigned int j = 0; j < key.length(); j++) {
-                hash = ((hash << 5) + hash) + (uint64_t)str[j];
-            }
-
-            if (hash % maxShard == myShard) {
-                server.Load(key, VersionedKVStore::KVStoreValue("null"), Timestamp());
-            }
-        }
-        in.close();
-    }
 
     fprintf(stdout, "Completed setup. Running server ...\n");
     transport.Run();
