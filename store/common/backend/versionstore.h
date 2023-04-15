@@ -85,7 +85,7 @@ private:
         Timestamp write;
         KVStoreValue value;
 
-        VersionedValue(Timestamp commit) : write(commit), value(KVStoreValue("tmp")) { };
+        VersionedValue(Timestamp commit) : write(commit), value(KVStoreValue()) { };
         VersionedValue(Timestamp commit, KVStoreValue val) : write(commit), value(val) { };
 
         friend bool operator> (const VersionedValue &v1, const VersionedValue &v2) {

@@ -166,13 +166,13 @@ Server::UnloggedUpcall(const string &str1, void* reply)
                 status = store->Get(request.txnid(), request.get().key(),
                                 request.get().timestamp(), val);
                 if (status == 0) {
-                    tapirReply.set_value(val.second.copyString);
+                    tapirReply.set_value((char*) val.second.zeroCopyString.ptr, val.second.zeroCopyString.len);
                 }
             } else {
                 pair<Timestamp, VersionedKVStore::KVStoreValue> val;
                 status = store->Get(request.txnid(), request.get().key(), val);
                 if (status == 0) {
-                    tapirReply.set_value(val.second.copyString);
+                    tapirReply.set_value((char*) val.second.zeroCopyString.ptr, val.second.zeroCopyString.len);
                     val.first.serialize(tapirReply.mutable_timestamp());
                 }
             }
@@ -374,14 +374,11 @@ main(int argc, char **argv)
                 hash = ((hash << 5) + hash) + (uint64_t)((char*)key_ptr)[j];
             }
             if (hash % maxShard == myShard) {
-                if (useCornflakes) {
-                    VersionedKVStore::KVStoreValue value = VersionedKVStore::KVStoreValue((unsigned char *)value_ptr, value_len, value_box_ptr);
-                    server.Load(key, value, Timestamp()); 
-                } else {
-                    VersionedKVStore::KVStoreValue value = VersionedKVStore::KVStoreValue((char*) value_ptr, value_len);
-                    server.Load(key, value, Timestamp());
-                    Mlx5Connection_free_datapath_buffer(value_box_ptr);
-                }
+                VersionedKVStore::KVStoreValue value = VersionedKVStore::KVStoreValue((unsigned char *)value_ptr, value_len, value_box_ptr);
+                server.Load(key, value, Timestamp()); 
+                // if (!useCornflakes) {
+                //     Mlx5Connection_free_datapath_buffer(value_box_ptr);
+                // }
             }
         } else {
             printf("ERROR: Could not load value for key %lu from kv store", key_idx);
