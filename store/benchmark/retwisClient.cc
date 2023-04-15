@@ -21,13 +21,13 @@ double alpha = -1;
 double *zipf;
 
 vector<string> keys;
+vector<string> values;
 int nKeys = 100;
 
 int
 main(int argc, char **argv)
 {
     const char *configPath = NULL;
-    const char *keysPath = NULL;
     int duration = 10;
     int nShards = 1;
     int closestReplica = -1; // Closest replica id.
@@ -52,7 +52,6 @@ main(int argc, char **argv)
 
         case 'f': // Generated keys path
         { 
-            keysPath = optarg;
             break;
         }
 
@@ -164,19 +163,20 @@ main(int argc, char **argv)
         exit(0);
     }
 
-    // Read in the keys from a file.
-    string key, value;
-    ifstream in;
-    in.open(keysPath);
-    if (!in) {
-        fprintf(stderr, "Could not read keys from: %s\n", keysPath);
-        exit(0);
-    }
+    // Generate keys.
+    size_t keySize = 64;
+    size_t valueSize = 512;
+
     for (int i = 0; i < nKeys; i++) {
         getline(in, key);
-        keys.push_back(key);
+        string keyPrefix = "key_";
+        string valuePrefix = "value_";
+        string indexStr = std::to_string(i);
+        string keyFiller(keySize - keyPrefix.length() - indexStr.length(), 'a');
+        string valueFiller(valueSize - valuePrefix.length() - indexStr.length(), 'a');
+        keys.push_back(keyPrefix + indexStr + keyFiller);
+        values.push_back(valuePrefix + indexStr + valueFiller);
     }
-    in.close();
 
     struct timeval t0, t1, t2;
     int nTransactions = 0; // Number of transactions attempted.
@@ -188,6 +188,7 @@ main(int argc, char **argv)
     gettimeofday(&t0, NULL);
     srand(t0.tv_sec + t0.tv_usec);
 
+    string value;
     while (1) {
         keyIdx.clear();
             
@@ -212,7 +213,7 @@ main(int argc, char **argv)
             }
             
             for (int i = 0; i < 3 && status; i++) {
-                client->Put(keys[keyIdx[i]], keys[keyIdx[i]]);
+                client->Put(keys[keyIdx[i]], values[keyIdx[i]]);
             }
             ttype = 1;
         } else if (ttype < 20) {
@@ -226,7 +227,7 @@ main(int argc, char **argv)
                     Warning("Aborting due to %s %d", keys[keyIdx[i]].c_str(), ret);
                     status = false;
                 }
-                client->Put(keys[keyIdx[i]], keys[keyIdx[i]]);
+                client->Put(keys[keyIdx[i]], values[keyIdx[i]]);
             }
             ttype = 2;
         } else if (ttype < 50) {
@@ -243,10 +244,10 @@ main(int argc, char **argv)
                     Warning("Aborting due to %s %d", keys[keyIdx[i]].c_str(), ret);
                     status = false;
                 }
-                client->Put(keys[keyIdx[i]], keys[keyIdx[i]]);
+                client->Put(keys[keyIdx[i]], values[keyIdx[i]]);
             }
             for (int i = 0; i < 2; i++) {
-                client->Put(keys[keyIdx[i+3]], keys[keyIdx[i+3]]);
+                client->Put(keys[keyIdx[i+3]], values[keyIdx[i+3]]);
             }
             ttype = 3;
         } else {
