@@ -168,7 +168,6 @@ main(int argc, char **argv)
     size_t valueSize = 512;
 
     for (int i = 0; i < nKeys; i++) {
-        getline(in, key);
         string keyPrefix = "key_";
         string valuePrefix = "value_";
         string indexStr = std::to_string(i);
