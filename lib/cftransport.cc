@@ -135,11 +135,10 @@ CFTransport::Register(TransportReceiver *receiver,
 
 }
 
-static size_t
+static void*
 SerializeMessage(const ::google::protobuf::Message &m,
-                 std::unique_ptr<char[]> *out)
+                 size_t* msg_len, void* connection, uintptr_t conn_id, uint32_t msg_id)
 {
-    string data = m.SerializeAsString();
     string type = m.GetTypeName();
     int msg_type = -1;
     if (type == "replication.ir.proto.FinalizeInconsistentMessage") {
@@ -168,29 +167,31 @@ SerializeMessage(const ::google::protobuf::Message &m,
 
     if (msg_type == -1) {
         printf("type: %s\n", type.c_str());
-	Panic("Invalid message type");
+	    Panic("Invalid message type");
     }
 
+    void* raw_data_ptr;
+    void* smart_data_ptr;
+    size_t data_len = m.ByteSizeLong();
+    ssize_t total_len = (sizeof(int) +
+                      data_len + sizeof(data_len));
+    Mlx5Connection_prepare_single_buffer_with_udp_header(connection, 
+        msg_id, conn_id, total_len, &raw_data_ptr, &smart_data_ptr);
+
     // ignore type len and type. just write the enum and the data.
-    size_t dataLen = data.length();
-    ssize_t totalLen = (sizeof(int) +
-                       dataLen + sizeof(dataLen));
-
-    std::unique_ptr<char[]> unique_buf(new char[totalLen]);
-    char *buf = unique_buf.get();
-
-    char *ptr = buf;
+    char *ptr = (char*) raw_data_ptr;
     *((int *) ptr) = msg_type;
     ptr += sizeof(int);
-    *((size_t *) ptr) = dataLen;
+    *((size_t *) ptr) = data_len;
     ptr += sizeof(size_t);
-    ASSERT(ptr-buf < totalLen);
-    ASSERT(ptr+dataLen-buf == totalLen);
-    memcpy(ptr, data.c_str(), dataLen);
-    ptr += dataLen;
+    m.SerializeToArray(ptr, data_len);
 
-    *out = std::move(unique_buf);
-    return totalLen;
+    ASSERT(ptr-buf < total_len);
+    ASSERT(ptr+data_len-buf == total_len);
+
+    *msg_len = total_len;
+    printf("msg len %lu\n", *msg_len); 
+    return smart_data_ptr;
 }
 
 bool
@@ -208,13 +209,12 @@ CFTransport::SendMessageInternal(TransportReceiver *src,
     uintptr_t conn_id = dynamic_cast<const CFTransportAddress &>(dst).conn_id;
     uint32_t msg_id = dynamic_cast<const CFTransportAddress &>(dst).msg_id;
     // Serialize message
-    std::unique_ptr<char[]> unique_buf;
-    size_t msgLen = SerializeMessage(m, &unique_buf);
-    char *buf = unique_buf.get(); 
-    uint32_t status = Mlx5Connection_queue_single_buffer_with_copy(connection, msg_id, conn_id, (uint8_t*)buf, msgLen, true);
-    if (status != 0) {
-        Panic("Error queuing single buffer.");
-    }
+    size_t msgLen;
+    void* box_buffer = SerializeMessage(m, &msgLen, connection, conn_id, msg_id);
+    Mlx5Connection_transmit_single_datapath_buffer_with_header(connection, box_buffer, msgLen, 1);
+    // if (status != 0) {
+    //     Panic("Error queuing single buffer.");
+    // }
 
     return true;
 }
@@ -270,7 +270,6 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg)
     } else if (msg_type == PROPOSE_CONSENSUS_MESSAGE) {
         type = "replication.ir.proto.ProposeConsensusMessage";
     } else if (msg_type == UNLOGGED_REQUEST_MESSAGE) {
-	printf("received unlogged request message.\n");
         type = "replication.ir.proto.UnloggedRequestMessage";
     } else if (msg_type == REPLY_INCONSISTENT_MESSAGE) {
         type = "replication.ir.proto.ReplyInconsistentMessage";
@@ -360,5 +359,4 @@ CFTransport::CancelAllTimers()
 {
     Panic("All timers canceled in CFTransport. Unimplemented.");
 }
-
 
