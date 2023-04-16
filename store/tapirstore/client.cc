@@ -57,7 +57,7 @@ Client::Client(const string configPath, int nShards,
     for (uint64_t i = 0; i < nshards; i++) {
         string shardConfigPath = configPath + to_string(i) + ".config";
         ShardClient *shardclient = new ShardClient(shardConfigPath,
-                &transport, client_id, i, closestReplica);
+                &transport, client_id, i, closestReplica, useCornflakes);
         bclient[i] = new BufferClient(shardclient);
     }
 

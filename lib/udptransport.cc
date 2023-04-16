@@ -541,7 +541,7 @@ UDPTransport::Stop()
 }
 
 static void
-DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unordered_map<uint32_t, MessageType>& respTypeMap, void* arena, bool useCornflakes)
+DecodePacket(const char *buf, size_t sz, string &type, void* &msg, std::unordered_map<uint32_t, MessageType>& respTypeMap, void* arena, bool useCornflakes)
 {
     // printf("Decode packet of size: %lu.\n", sz);
     // printf("[");
@@ -566,6 +566,7 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
             ReplyInconsistentMessage_new_in(arena, &reply);
             // do not include msg id in size bc ptr is incremented past the msg id
             ReplyInconsistentMessage_deserialize(reply, ptr, sz - sizeof(uint32_t), 0, arena);
+            /*
             uint64_t view;
             ReplyInconsistentMessage_get_view(reply, &view);
             uint32_t replicaIdx;
@@ -589,12 +590,14 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
             replyProto.mutable_opid()->set_clientreqid(clientreqid);
             replyProto.set_finalized(finalized);
             // maybe construct the protobuf and serialize it to string and set that to msg.
-            type = replyProto.GetTypeName();
-            msg = replyProto.SerializeAsString();
+            */
+            type = "replication.ir.proto.ReplyInconsistentMessage";
+            msg = reply;
         } else if (respType == CONFIRM_MESSAGE) {
             ConfirmMessage_new_in(arena, &reply);
             // do not include msg id in size bc ptr is incremented past the msg id
             ConfirmMessage_deserialize(reply, ptr, sz - sizeof(uint32_t), 0, arena);
+            /*
             uint64_t view;
             ConfirmMessage_get_view(reply, &view);
             uint32_t replicaIdx;
@@ -614,12 +617,14 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
             replyProto.mutable_opid()->set_clientid(clientid);
             replyProto.mutable_opid()->set_clientreqid(clientreqid);
             // maybe construct the protobuf and serialize it to string and set that to msg.
-            type = replyProto.GetTypeName();
-            msg = replyProto.SerializeAsString();
+            */
+            type = "replication.ir.proto.ConfirmMessage";
+            msg = reply;
         } else if (respType == REPLY_CONSENSUS_MESSAGE) {
             ReplyConsensusMessage_new_in(arena, &reply);
             // do not include msg id in size bc ptr is incremented past the msg id
             ReplyConsensusMessage_deserialize(reply, ptr, sz - sizeof(uint32_t), 0, arena);
+            /*
             uint64_t view;
             ReplyConsensusMessage_get_view(reply, &view);
             uint32_t replicaIdx;
@@ -672,12 +677,15 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
             *replyProto.mutable_result()->mutable_result() = tapirReplyProto;
             replyProto.set_finalized(finalized);
             // maybe construct the protobuf and serialize it to string and set that to msg.
-            type = replyProto.GetTypeName();
-            msg = replyProto.SerializeAsString();
+            */
+            type = "replication.ir.proto.ReplyConsensusMessage";
+            msg = reply;
         } else if (respType == UNLOGGED_REPLY_MESSAGE) {
             UnloggedReplyMessage_new_in(arena, &reply);
             // do not include msg id in size bc ptr is incremented past the msg id
             UnloggedReplyMessage_deserialize(reply, ptr, sz - sizeof(uint32_t), 0, arena);
+            
+            /*
             uint64_t clientreqid;
             UnloggedReplyMessage_get_clientreqid(reply, &clientreqid);
         
@@ -717,8 +725,10 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
             tapirReplyProto.mutable_timestamp()->set_timestamp(timestampVal);
             *replyProto.mutable_reply()->mutable_result() = tapirReplyProto;
             // maybe construct the protobuf and serialize it to string and set that to msg.
-            type = replyProto.GetTypeName();
-            msg = replyProto.SerializeAsString();
+            */
+            
+            type = "replication.ir.proto.UnloggedReplyMessag";
+            msg = reply;
         } else {
             Panic("Cornflakes decoding unkown message type.\n");
         }

@@ -54,7 +54,7 @@ public:
 
     IRClient(const transport::Configuration &config,
              Transport *transport,
-             uint64_t clientid = 0);
+             uint64_t clientid = 0, bool useCornflakes = false);
     virtual ~IRClient();
 
     virtual void Invoke(
@@ -89,7 +89,7 @@ protected:
         continuation_t continuation;
         bool continuationInvoked = false;
         std::unique_ptr<Timeout> timer;
-        QuorumSet<viewstamp_t, proto::ConfirmMessage> confirmQuorum;
+        QuorumSet<viewstamp_t, void*> confirmQuorum;
 
         inline PendingRequest(string request, uint64_t clientReqId,
                               continuation_t continuation,
@@ -115,7 +115,7 @@ protected:
     };
 
     struct PendingInconsistentRequest : public PendingRequest {
-        QuorumSet<viewstamp_t, proto::ReplyInconsistentMessage>
+        QuorumSet<viewstamp_t, void*>
             inconsistentReplyQuorum;
 
         inline PendingInconsistentRequest(string request, uint64_t clientReqId,
@@ -169,6 +169,7 @@ protected:
 
     uint64_t lastReqId;
     std::unordered_map<uint64_t, PendingRequest *> pendingReqs;
+    bool useCornflakes;
 
     void SendInconsistent(const PendingInconsistentRequest *req);
     void ResendInconsistent(const uint64_t reqId);
@@ -213,13 +214,13 @@ protected:
 
     void ResendConfirmation(const uint64_t reqId, bool isConsensus);
     void HandleInconsistentReply(const TransportAddress &remote,
-                                 const proto::ReplyInconsistentMessage &msg);
+                                 void* msg_ptr);
     void HandleConsensusReply(const TransportAddress &remote,
-                              const proto::ReplyConsensusMessage &msg);
+                              void* msg_ptr);
     void HandleConfirm(const TransportAddress &remote,
-                       const proto::ConfirmMessage &msg);
+                       void* msg_ptr);
     void HandleUnloggedReply(const TransportAddress &remote,
-                             const proto::UnloggedReplyMessage &msg);
+                             void* msg_ptr);
     void UnloggedRequestTimeoutCallback(const uint64_t reqId);
 };
 

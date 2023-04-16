@@ -55,7 +55,7 @@ public:
         Transport *transport,
         uint64_t client_id,
         int shard,
-        int closestReplica);
+        int closestReplica, bool useCornflakes = false);
     ~ShardClient();
 
     // Overriding from TxnClient
@@ -89,6 +89,7 @@ private:
     transport::Configuration *config;
     int shard; // which shard this client accesses
     int replica; // which replica to use for reads
+    bool useCornflakes;
 
     replication::ir::IRClient *client; // Client proxy.
     Promise *waiting; // waiting thread
@@ -101,10 +102,10 @@ private:
     void GetTimeout();
 
     /* Callbacks for hearing back from a shard for an operation. */
-    void GetCallback(const std::string &, const replication::Reply &);
-    void PrepareCallback(const std::string &, const replication::Reply &);
-    void CommitCallback(const std::string &, const replication::Reply &);
-    void AbortCallback(const std::string &, const replication::Reply &);
+    void GetCallback(const std::string &, void* & );
+    void PrepareCallback(const std::string &, void* &);
+    void CommitCallback(const std::string &, void* &);
+    void AbortCallback(const std::string &, void* &);
 
     /* Helper Functions for starting and finishing requests */
     void StartRequest();

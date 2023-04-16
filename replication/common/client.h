@@ -61,7 +61,7 @@ class Client : public TransportReceiver
 {
 public:
     using continuation_t =
-        std::function<void(const string &request, const Reply &reply)>;
+        std::function<void(const string &request, void* reply)>;
     using error_continuation_t =
         std::function<void(const string &request, ErrorCode err)>;
 
