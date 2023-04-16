@@ -10,7 +10,7 @@ EXPAND = lib/tmpl/expand
 CFLAGS := -g -Wall -pthread -iquote.obj/gen -Wno-uninitialized -O2 -DNASSERT
 #CFLAGS := -g -Wall -pthread -iquote.obj/gen -Wno-uninitialized 
 CXXFLAGS := -g -std=c++0x
-LDFLAGS := -L/data/users/sravi2/cornflakes/target/release -levent_pthreads
+LDFLAGS := -L$(CORNFLAKES_PATH)/target/release -levent_pthreads
 ## Debian package: check
 #CHECK_CFLAGS := $(shell pkg-config --cflags check)
 #CHECK_LDFLAGS := $(shell pkg-config --cflags --libs check)
@@ -32,7 +32,6 @@ CFLAGS += $(LIBSSL_CFLAGS)
 LDFLAGS += $(LIBSSL_LDFLAGS)
 
 # Cornflakes Mlx5 Networking
-CORNFLAKES_PATH := /data/users/sravi2/cornflakes
 MLX5_CFLAGS := -I $(CORNFLAKES_PATH)/mlx5-datapath-c
 #CORNFLAKES_LDFLAGS := -L$(CORNFLAKES_PATH)/target/release
 CF_TAPIR_CFLAGS := -I $(CORNFLAKES_PATH)/tapir

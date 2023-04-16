@@ -270,6 +270,7 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg)
     } else if (msg_type == PROPOSE_CONSENSUS_MESSAGE) {
         type = "replication.ir.proto.ProposeConsensusMessage";
     } else if (msg_type == UNLOGGED_REQUEST_MESSAGE) {
+	printf("received unlogged request message.\n");
         type = "replication.ir.proto.UnloggedRequestMessage";
     } else if (msg_type == REPLY_INCONSISTENT_MESSAGE) {
         type = "replication.ir.proto.ReplyInconsistentMessage";
