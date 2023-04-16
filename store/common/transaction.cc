@@ -82,6 +82,6 @@ Transaction::serialize(TransactionMessage *msg) const
     for (auto write : writeSet) {
         WriteMessage *writeMsg = msg->add_writeset();
         writeMsg->set_key(write.first);
-        writeMsg->set_value((char*) write.second.zeroCopyString.ptr, write.second.zeroCopyString.len);
+        writeMsg->set_value(write.second.copyString);
     }
 }
