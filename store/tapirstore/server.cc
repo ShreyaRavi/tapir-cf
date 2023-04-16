@@ -218,13 +218,14 @@ int
 main(int argc, char **argv)
 {
     int index = -1;
-    unsigned int myShard = 0, maxShard = 1, nKeys = 1;
+    unsigned int myShard = 0, maxShard = 1, nKeys = 1, value_size = 64;
     const char *configPath = NULL;
     bool linearizable = true;
+    bool useCornflakes = false;
 
     // Parse arguments
     int opt;
-    while ((opt = getopt(argc, argv, "c:i:m:e:s:f:n:N:k:")) != -1) {
+    while ((opt = getopt(argc, argv, "c:i:m:e:s:f:n:N:k:v:l:")) != -1) {
         switch (opt) {
         case 'c':
             configPath = optarg;
@@ -290,6 +291,21 @@ main(int argc, char **argv)
         {
             break;
         }
+        case 'v':
+        {
+            useCornflakes = true;
+            break;
+        }
+        case 'l':
+        {
+            char* strtolPtr;
+            value_size = strtoul(optarg, &strtolPtr, 10);
+            if ((*optarg == '\0') || (*strtolPtr != '\0'))
+            {
+                fprintf(stderr, "option -l requires a numeric arg\n");
+            }
+            break;
+        }
 
         default:
             fprintf(stderr, "Unknown argument %s\n", argv[optind-2]);
@@ -327,10 +343,8 @@ main(int argc, char **argv)
         );
 
     Mlx5Connection_set_copying_threshold(connection, 0);
-    bool useCornflakes = true;
 
     size_t key_size = 64;
-    size_t value_size = 1024;
     size_t num_keys = nKeys;
 
     void* rust_backing_db;
