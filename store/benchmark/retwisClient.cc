@@ -39,6 +39,8 @@ main(int argc, char **argv)
         MODE_UNKNOWN,
         MODE_TAPIR,
     } mode = MODE_UNKNOWN;
+
+    bool useCornflakes = false;
     
 
     int opt;
@@ -148,6 +150,11 @@ main(int argc, char **argv)
             }
             break;
         }
+        case 'v':
+        {
+            useCornflakes = true;
+            break;
+        }
 
         default:
             fprintf(stderr, "Unknown argument %s\n", argv[optind]);
@@ -157,7 +164,7 @@ main(int argc, char **argv)
 
     if (mode == MODE_TAPIR) {
         client = new tapirstore::Client(configPath, nShards,
-                    closestReplica, TrueTime(skew, error));
+                    closestReplica, TrueTime(skew, error), useCornflakes);
     } else {
         fprintf(stderr, "option -m is required\n");
         exit(0);

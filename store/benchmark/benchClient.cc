@@ -35,6 +35,8 @@ main(int argc, char **argv)
     int skew = 0; // difference between real clock and TrueTime
     int error = 0; // error bars
 
+    bool useCornflakes = false;
+
     Client *client;
     enum {
         MODE_UNKNOWN,
@@ -44,7 +46,7 @@ main(int argc, char **argv)
     } mode = MODE_UNKNOWN;
     
     int opt;
-    while ((opt = getopt(argc, argv, "c:d:N:l:w:k:f:m:e:s:z:r:")) != -1) {
+    while ((opt = getopt(argc, argv, "c:d:N:l:w:k:f:m:e:s:z:r:v:")) != -1) {
         switch (opt) {
         case 'c': // Configuration path
         { 
@@ -172,6 +174,11 @@ main(int argc, char **argv)
             }
             break;
         }
+        case 'v':
+        {
+            useCornflakes = true;
+            break;
+        }
 
         default:
             fprintf(stderr, "Unknown argument %s\n", argv[optind]);
@@ -181,7 +188,7 @@ main(int argc, char **argv)
 
     if (mode == MODE_TAPIR) {
         client = new tapirstore::Client(configPath, nShards,
-                    closestReplica, TrueTime(skew, error));
+                    closestReplica, TrueTime(skew, error), useCornflakes);
     } else {
         fprintf(stderr, "option -m is required\n");
         exit(0);

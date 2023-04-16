@@ -52,7 +52,7 @@ class Client : public ::Client
 {
 public:
     Client(const std::string configPath, int nShards,
-	   int closestReplica, TrueTime timeserver = TrueTime(0,0));
+	   int closestReplica, TrueTime timeserver = TrueTime(0,0), bool useCornflakes = false);
     virtual ~Client();
 
     // Overriding functions from ::Client.
