@@ -129,6 +129,7 @@ Server::UnloggedUpcall(const string &str1, void* reply)
     Operation op = static_cast<Operation>(request.op());
     switch (op) {
     case GET:
+	printf("inside GET in tapir server\n");
         if (useCornflakes) {
             void* tapirReply;
             Reply_get_mut_result(reply, &tapirReply);
@@ -138,6 +139,8 @@ Server::UnloggedUpcall(const string &str1, void* reply)
                 status = store->Get(request.txnid(), request.get().key(),
                                 request.get().timestamp(), val);
                 if (status == 0) {
+		    string getValue((char*)val.second.zeroCopyString.ptr, val.second.zeroCopyString.len);
+		    printf("servicing get with key: %s, value: %s\n", request.get().key().c_str(), getValue.c_str());
                     void* cfString;
 
                     CFString_new(val.second.zeroCopyString.ptr, val.second.zeroCopyString.len, connection, arena, &cfString);
@@ -146,16 +149,19 @@ Server::UnloggedUpcall(const string &str1, void* reply)
             } else {
                 pair<Timestamp, VersionedKVStore::KVStoreValue> val;
                 status = store->Get(request.txnid(), request.get().key(), val);
-                if (status == 0) {
+                
+		if (status == 0) {
                     void* cfString;
                     CFString_new(val.second.zeroCopyString.ptr, val.second.zeroCopyString.len, connection, arena, &cfString);
                     TapirReply_set_value(tapirReply, cfString);
-  
+		    string getValue((char*) val.second.zeroCopyString.ptr, val.second.zeroCopyString.len);
+		    printf("servicing get with key: %s, value: %s\n", request.get().key().c_str(), getValue.c_str());
                     void* timestamp;
                     TapirReply_get_mut_timestamp(tapirReply, &timestamp);
                     val.first.serialize(timestamp, true);
                 }
             }
+	    printf("finishing servicing get request\n");
             TapirReply_set_status(tapirReply, status);
             break;
         } else {
