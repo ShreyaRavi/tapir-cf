@@ -24,7 +24,7 @@ LIB-configuration := $(o)configuration.o $(LIB-message)
 
 LIB-transport := $(o)transport.o $(LIB-message) $(LIB-configuration)
 
-LIB-transport-all := $(o)udptransport.o $(o)tcptransport.o $(o)cftransport.o $(LIB-transport)
+LIB-transport-all := $(o)udptransport.o $(o)cftransport.o $(LIB-transport)
 
 LIB-simtransport := $(o)simtransport.o $(LIB-transport)
 

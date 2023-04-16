@@ -84,7 +84,7 @@ public:
 
     virtual void ReceiveMessage(const TransportAddress &remote,
                                 const string &type,
-                                const string &data);
+                                void* data);
 
 protected:
     transport::Configuration config;

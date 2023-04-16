@@ -12,6 +12,7 @@ store/weakstore/server
 timeserver/timeserver
 
 store/tools/keys
+store/tools/shard0.config
 
 lib/tests/configuration-test
 lib/tests/simtransport-test

@@ -70,7 +70,7 @@ public:
     virtual void ReceiveMessage(
         const TransportAddress &remote,
         const string &type,
-        const string &data) override;
+        void* data) override;
 
     virtual void InvokeInconsistent(
         const string &request,

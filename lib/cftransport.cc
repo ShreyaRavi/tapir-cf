@@ -328,7 +328,7 @@ CFTransport::Run()
 
             // 2. DONE. create an address with the conn id pointer and pass it in.
             CFTransportAddress senderAddr(conn_id, msg_id);
-            receiver->ReceiveMessage(senderAddr, msgType, msg);
+            receiver->ReceiveMessage(senderAddr, msgType, &msg);
 	    Mlx5Connection_RxPacket_free(pkts[i]);
         }
         Bump_reset(arena);

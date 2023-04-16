@@ -781,6 +781,7 @@ UDPTransport::OnReadable(int fd)
             // Not a fragment. Decode the packet
             DecodePacket(buf, sz, msgType, msg, msgRespType, arena, useCornflakes);
         } else {
+            printf("have to deal with fragments.\n");
             // This is a fragment. Decode the header
             const char *ptr = buf;
             ptr += sizeof(size_t);
@@ -856,37 +857,8 @@ UDPTransport::OnReadable(int fd)
 
     deliver:
         // Was this received on a multicast fd?
-        auto it = multicastConfigs.find(fd);
-        if (it != multicastConfigs.end()) {
-            // If so, deliver the message to all replicas for that
-            // config, *except* if that replica was the sender of the
-            // message.
-            const transport::Configuration *cfg = it->second;
-            for (auto &kv : replicaReceivers[cfg]) {
-                TransportReceiver *receiver = kv.second;
-                const UDPTransportAddress &raddr = 
-                    replicaAddresses[cfg].find(kv.first)->second;
-                // Don't deliver a message to the sending replica
-                if (raddr != senderAddr) {
-                    receiver->ReceiveMessage(senderAddr, msgType, msg);
-                }
-            }
-        } else {
-            TransportReceiver *receiver = receivers[fd];
-            receiver->ReceiveMessage(senderAddr, msgType, msg);
-        }
-
-        if (reorderBuffer.valid) {
-            reorderBuffer.valid = false;
-            msg = reorderBuffer.message;
-            msgType = reorderBuffer.msgType;
-            fd = reorderBuffer.fd;
-            senderAddr = *(reorderBuffer.addr);
-            delete reorderBuffer.addr;
-            Debug("Delivering reordered packet of type %s",
-                  msgType.c_str());
-            goto deliver;       // XXX I am a bad person for this.
-        }
+        TransportReceiver *receiver = receivers[fd];
+        receiver->ReceiveMessage(senderAddr, msgType, &msg);
     }
 }
 

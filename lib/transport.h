@@ -70,7 +70,7 @@ public:
     virtual const TransportAddress& GetAddress();
 
     virtual void ReceiveMessage(const TransportAddress &remote,
-                                const string &type, const string &data) = 0;
+                                const string &type, void* data) = 0;
 
     
 protected:

@@ -76,7 +76,7 @@ Client::~Client()
 
 void
 Client::ReceiveMessage(const TransportAddress &remote,
-                       const string &type, const string &data)
+                       const string &type, void* data)
 {
     Panic("Received unexpected message type: %s",
           type.c_str());

@@ -404,24 +404,25 @@ IRClient::ResendConfirmation(const uint64_t reqId, bool isConsensus)
 void
 IRClient::ReceiveMessage(const TransportAddress &remote,
                          const string &type,
-                         const string &data)
+                         void* data)
 {
+    string* data_str = (string*) data;
     proto::ReplyInconsistentMessage replyInconsistent;
     proto::ReplyConsensusMessage replyConsensus;
     proto::ConfirmMessage confirm;
     proto::UnloggedReplyMessage unloggedReply;
 
     if (type == replyInconsistent.GetTypeName()) {
-        replyInconsistent.ParseFromString(data);
+        replyInconsistent.ParseFromString(*data_str);
         HandleInconsistentReply(remote, replyInconsistent);
     } else if (type == replyConsensus.GetTypeName()) {
-        replyConsensus.ParseFromString(data);
+        replyConsensus.ParseFromString(*data_str);
         HandleConsensusReply(remote, replyConsensus);
     } else if (type == confirm.GetTypeName()) {
-        confirm.ParseFromString(data);
+        confirm.ParseFromString(*data_str);
         HandleConfirm(remote, confirm);
     } else if (type == unloggedReply.GetTypeName()) {
-        unloggedReply.ParseFromString(data);
+        unloggedReply.ParseFromString(*data_str);
         HandleUnloggedReply(remote, unloggedReply);
     } else {
         Client::ReceiveMessage(remote, type, data);
