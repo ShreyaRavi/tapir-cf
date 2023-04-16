@@ -190,7 +190,6 @@ SerializeMessage(const ::google::protobuf::Message &m,
     ASSERT(ptr+data_len-buf == total_len);
 
     *msg_len = total_len;
-    printf("msg len %lu\n", *msg_len); 
     return smart_data_ptr;
 }
 
@@ -280,7 +279,7 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg)
     } else if (msg_type == UNLOGGED_REPLY_MESSAGE) {
         type = "replication.ir.proto.UnloggedReplyMessage";
     } else {
-	printf("message type: %d\n", msg_type);
+        printf("message type: %d\n", msg_type);
         Panic("Decoding unknown message type.");
     }
 

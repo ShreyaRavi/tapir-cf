@@ -24,7 +24,7 @@ Transaction::Transaction(const TransactionMessage &msg, void* connection, void* 
     for (int i = 0; i < msg.writeset_size(); i++) {
         WriteMessage writeMsg = msg.writeset(i);
         if (useCornflakes) {
-	    printf("in put path, put value: %s for key %s\n", writeMsg.value().c_str(), writeMsg.key().c_str());
+	    // printf("in put path, put value: %s for key %s\n", writeMsg.value().c_str(), writeMsg.key().c_str());
             void* new_val_buffer;
             // allocate into mlx5 buffer and get zero copy reference
             void* smart_ptr_buffer = Mlx5Connection_allocate_and_copy_into_original_datapath_buffer(

@@ -444,7 +444,7 @@ SerializeMessage(const ::google::protobuf::Message &m,
 
     if (msg_type == -1) {
         printf("type: %s\n", type.c_str());
-	Panic("Invalid message type");
+        Panic("Invalid message type");
     }
 
     size_t dataLen = data.length();
@@ -543,12 +543,12 @@ UDPTransport::Stop()
 static void
 DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unordered_map<uint32_t, MessageType>& respTypeMap, void* arena, bool useCornflakes)
 {
-    printf("Decode packet of size: %lu.\n", sz);
-    printf("[");
-    for (size_t i = 0; i < sz; i++) {
-        printf("%u, ", (unsigned int) buf[i]);
-    }
-    printf("]\n");
+    // printf("Decode packet of size: %lu.\n", sz);
+    // printf("[");
+    // for (size_t i = 0; i < sz; i++) {
+    //     printf("%u, ", (unsigned int) buf[i]);
+    // }
+    // printf("]\n");
     const char *ptr = buf;
     // first 4 bytes: msg id
     uint32_t msgId = *((uint32_t *)ptr);
@@ -695,9 +695,9 @@ DecodePacket(const char *buf, size_t sz, string &type, string &msg, std::unorder
             const unsigned char* replyValue;
             uintptr_t replyLen;
             CFString_unpack(cfValue, &replyValue, &replyLen);
-            printf("unlogged reply message value len: %lu\n",replyLen );
+            // printf("unlogged reply message value len: %lu\n",replyLen );
             string replyStr((char*)replyValue, replyLen);
-            printf("value in unlogged reply message tapir reply: %s\n", replyStr.c_str());
+            // printf("value in unlogged reply message tapir reply: %s\n", replyStr.c_str());
 
             void* timestamp;
             TapirReply_get_mut_timestamp(tapirReply, &timestamp);
