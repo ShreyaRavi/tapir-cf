@@ -330,7 +330,7 @@ main(int argc, char **argv)
     bool useCornflakes = true;
 
     size_t key_size = 64;
-    size_t value_size = 64;
+    size_t value_size = 1024;
     size_t num_keys = nKeys;
 
     void* rust_backing_db;

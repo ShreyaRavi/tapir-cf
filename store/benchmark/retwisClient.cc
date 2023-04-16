@@ -165,7 +165,7 @@ main(int argc, char **argv)
 
     // Generate keys.
     size_t keySize = 64;
-    size_t valueSize = 64;
+    size_t valueSize = 1024;
 
     for (int i = 0; i < nKeys; i++) {
         string keyPrefix = "key_";
