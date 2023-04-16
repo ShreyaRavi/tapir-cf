@@ -33,6 +33,7 @@ main(int argc, char **argv)
     int closestReplica = -1; // Closest replica id.
     int skew = 0; // difference between real clock and TrueTime
     int error = 0; // error bars
+    unsigned int valueSize = 64;
 
     Client *client;
     enum {
@@ -44,7 +45,7 @@ main(int argc, char **argv)
     
 
     int opt;
-    while ((opt = getopt(argc, argv, "c:d:N:k:f:m:e:s:z:r:")) != -1) {
+    while ((opt = getopt(argc, argv, "c:d:N:k:f:m:e:s:z:r:v:l:")) != -1) {
         switch (opt) {
         case 'c': // Configuration path
         { 
@@ -155,6 +156,16 @@ main(int argc, char **argv)
             useCornflakes = true;
             break;
         }
+        case 'l':
+        {
+            char *strtolPtr;
+            valueSize = strtoul(optarg, &strtolPtr, 10);
+            if ((*optarg == '\0') || (*strtolPtr != '\0'))
+            {
+                fprintf(stderr, "option -l requires a numeric arg\n");
+            }
+            break;  
+        }
 
         default:
             fprintf(stderr, "Unknown argument %s\n", argv[optind]);
@@ -172,7 +183,6 @@ main(int argc, char **argv)
 
     // Generate keys.
     size_t keySize = 64;
-    size_t valueSize = 1024;
 
     for (int i = 0; i < nKeys; i++) {
         string keyPrefix = "key_";
