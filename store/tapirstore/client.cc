@@ -115,10 +115,10 @@ Client::Get(const string &key, string &value)
 
     // Send the GET operation to appropriate shard.
     Promise promise(GET_TIMEOUT);
-    printf("get path key: %s\n", key.c_str());
+    //printf("get path key: %s\n", key.c_str());
     bclient[i]->Get(key, &promise);
     value = promise.GetValue();
-    printf("get path value: %s\n", value.c_str());
+    //printf("get path value: %s\n", value.c_str());
     return promise.GetReply();
 }
 
@@ -149,7 +149,7 @@ Client::Put(const string &key, const string &value)
 
     // Buffering, so no need to wait.
     bclient[i]->Put(key, value, &promise);
-    printf("client put with key: %s and value: %s\n", key.c_str(), value.c_str());
+    //printf("client put with key: %s and value: %s\n", key.c_str(), value.c_str());
     return promise.GetReply();
 }
 
