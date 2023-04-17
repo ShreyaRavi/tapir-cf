@@ -29,6 +29,7 @@
  **********************************************************************/
 
 #include "store/common/backend/versionstore.h"
+#include "mlx5_datapath_cpp.h"
 
 using namespace std;
 
@@ -110,6 +111,11 @@ VersionedKVStore::getRange(const string &key, const Timestamp &t,
 void
 VersionedKVStore::put(const string &key, const KVStoreValue &value, const Timestamp &t)
 {
+    set<VersionedValue>::iterator it;
+    getValue(key, t, it);
+    if (it != store[key].end()) {
+        Mlx5Connection_free_datapath_buffer((*it).value.zeroCopyString.smart_ptr);
+    }
     // Key does not exist. Create a list and an entry.
     store[key].insert(VersionedValue(t, value));
 }
