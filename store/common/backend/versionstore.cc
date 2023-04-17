@@ -115,6 +115,7 @@ VersionedKVStore::put(const string &key, const KVStoreValue &value, const Timest
     getValue(key, t, it);
     if (it != store[key].end()) {
         Mlx5Connection_free_datapath_buffer((*it).value.zeroCopyString.smart_ptr);
+        store[key].clear(); 
     }
     // Key does not exist. Create a list and an entry.
     store[key].insert(VersionedValue(t, value));
