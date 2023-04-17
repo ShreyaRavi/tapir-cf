@@ -779,7 +779,10 @@ IRClient::HandleUnloggedReply(const TransportAddress &remote,
     } else {
         proto::UnloggedReplyMessage* msg = new proto::UnloggedReplyMessage();
         string* msg_str = (string*) msg_ptr;
+        const char* c_str_for_msg = msg_str->c_str();
+        for (size_t i = 0; i < 80; i++) { printf("%u, ", (unsigned int) c_str_for_msg[i]); }
         msg->ParseFromString(*msg_str);
+        printf("finished parsing from string\n");
 
         uint64_t reqId = msg->clientreqid();
         auto it = pendingReqs.find(reqId);

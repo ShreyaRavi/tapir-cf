@@ -256,7 +256,12 @@ static void
 DecodePacket(const char *buf, size_t sz, string &type, string &msg)
 {   
     // first sizeof(int) bytes represent the type which we can look up in the enum
-
+    printf("Decode packet of size: %lu.\n", sz);
+    printf("[");
+    for (size_t i = 0; i < sz; i++) {
+        printf("%u, ", (unsigned int) buf[i]);
+    }
+    printf("]\n");
     const char *ptr = buf;
     int msg_type = *((int *)ptr);
     ptr += sizeof(int);

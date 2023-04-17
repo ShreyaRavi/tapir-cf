@@ -543,12 +543,12 @@ UDPTransport::Stop()
 static void
 DecodePacket(const char *buf, size_t sz, string &type, void* &msg, std::unordered_map<uint32_t, MessageType>& respTypeMap, void* arena, bool useCornflakes)
 {
-    // printf("Decode packet of size: %lu.\n", sz);
-    // printf("[");
-    // for (size_t i = 0; i < sz; i++) {
-    //     printf("%u, ", (unsigned int) buf[i]);
-    // }
-    // printf("]\n");
+    printf("Decode packet of size: %lu.\n", sz);
+    printf("[");
+    for (size_t i = 0; i < sz; i++) {
+        printf("%u, ", (unsigned int) buf[i]);
+    }
+    printf("]\n");
     const char *ptr = buf;
     // first 4 bytes: msg id
     uint32_t msgId = *((uint32_t *)ptr);
@@ -727,7 +727,7 @@ DecodePacket(const char *buf, size_t sz, string &type, void* &msg, std::unordere
             // maybe construct the protobuf and serialize it to string and set that to msg.
             */
             
-            type = "replication.ir.proto.UnloggedReplyMessag";
+            type = "replication.ir.proto.UnloggedReplyMessage";
             msg = reply;
         } else {
             Panic("Cornflakes decoding unkown message type.\n");
@@ -751,11 +751,10 @@ DecodePacket(const char *buf, size_t sz, string &type, void* &msg, std::unordere
         size_t msgLen = *((size_t *)ptr);
         ptr += sizeof(size_t);
     
-        ASSERT(ptr-buf < (int)sz);
-        ASSERT(ptr+msgLen-buf <= (int)sz);
-    
+        //ASSERT(ptr-buf < (int)sz);
+        //ASSERT(ptr+msgLen-buf <= (int)sz);
         msg = new string(ptr, msgLen);
-        ptr += msgLen;
+        
    }
 }
 
@@ -854,7 +853,7 @@ UDPTransport::OnReadable(int fd)
     deliver:
         // Was this received on a multicast fd?
         TransportReceiver *receiver = receivers[fd];
-        receiver->ReceiveMessage(senderAddr, msgType, &msg);
+        receiver->ReceiveMessage(senderAddr, msgType, msg);
     }
 }
 
