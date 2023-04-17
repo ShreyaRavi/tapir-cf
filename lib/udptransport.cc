@@ -754,7 +754,7 @@ DecodePacket(const char *buf, size_t sz, string &type, void* &msg, std::unordere
         ASSERT(ptr-buf < (int)sz);
         ASSERT(ptr+msgLen-buf <= (int)sz);
     
-        msg = string(ptr, msgLen);
+        msg = new string(ptr, msgLen);
         ptr += msgLen;
    }
 }
@@ -781,7 +781,8 @@ UDPTransport::OnReadable(int fd)
         }
         
         UDPTransportAddress senderAddr(sender);
-        string msgType, msg;
+        string msgType;
+        void* msg;
 
         // Take a peek at the first field. If it's all zeros, this is
         // a fragment. Otherwise, we can decode it directly.
@@ -846,21 +847,6 @@ UDPTransport::OnReadable(int fd)
             if (roll < dropRate) {
                 Debug("Simulating packet drop of message type %s",
                       msgType.c_str());
-                continue;
-            }
-        }
-
-        if (!reorderBuffer.valid && (reorderRate > 0.0)) {
-            double roll = uniformDist(randomEngine);
-            if (roll < reorderRate) {
-                Debug("Simulating reorder of message type %s",
-                      msgType.c_str());
-                ASSERT(!reorderBuffer.valid);
-                reorderBuffer.valid = true;
-                reorderBuffer.addr = new UDPTransportAddress(senderAddr);
-                reorderBuffer.message = msg;
-                reorderBuffer.msgType = msgType;
-                reorderBuffer.fd = fd;
                 continue;
             }
         }

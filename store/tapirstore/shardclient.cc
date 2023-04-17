@@ -30,6 +30,7 @@
  **********************************************************************/
 
 #include "store/tapirstore/shardclient.h"
+#include "tapir_serialized_cpp.h"
 
 namespace tapirstore {
 
@@ -283,7 +284,7 @@ ShardClient::GetTimeout()
 
 /* Callback from a shard replica on get operation completion. */
 void
-ShardClient::GetCallback(const string &request_str, void* &replication_reply)
+ShardClient::GetCallback(const string &request_str, const void* replication_reply)
 {
     /* Replies back from a shard. */
 
@@ -291,7 +292,7 @@ ShardClient::GetCallback(const string &request_str, void* &replication_reply)
 
     if (useCornflakes) {
         void* tapirReply;
-        Reply_get_mut_result(replication_reply, &tapirReply);
+        Reply_get_result(replication_reply, &tapirReply);
 
         int32_t status;
         TapirReply_get_status(tapirReply, &status);
@@ -303,7 +304,10 @@ ShardClient::GetCallback(const string &request_str, void* &replication_reply)
         CFString_unpack(cfValue, &replyValue, &replyLen);
         // printf("unlogged reply message value len: %lu\n",replyLen );
         string replyStr((char*)replyValue, replyLen);
-
+        
+        void* timestamp;
+        TapirReply_get_mut_timestamp(tapirReply, &timestamp);
+        
         uint64_t timestampId;
         TimestampMessage_get_id(timestamp, &timestampId);
         uint64_t timestampVal;
@@ -313,7 +317,7 @@ ShardClient::GetCallback(const string &request_str, void* &replication_reply)
         if (waiting != NULL) {
             Promise *w = waiting;
             waiting = NULL;
-            w->Reply(reply.status(), Timestamp(timestampVal), replyStr);
+            w->Reply(status, Timestamp(timestampVal), replyStr);
         }
 
         // printf("value in unlogged reply message tapir reply: %s\n", replyStr.c_str());
@@ -336,7 +340,7 @@ ShardClient::GetCallback(const string &request_str, void* &replication_reply)
 
 /* Callback from a shard replica on prepare operation completion. */
 void
-ShardClient::PrepareCallback(const string &request_str, void* &replication_reply)
+ShardClient::PrepareCallback(const string &request_str, const void* replication_reply)
 {
     // this will ALWAYS be a protobuf
     const TapirReply& reply = ((replication::Reply*)replication_reply)->result();
@@ -354,7 +358,7 @@ ShardClient::PrepareCallback(const string &request_str, void* &replication_reply
 
 /* Callback from a shard replica on commit operation completion. */
 void
-ShardClient::CommitCallback(const string &request_str, void* &reply_str)
+ShardClient::CommitCallback(const string &request_str, const void* reply_str)
 {
     // COMMITs always succeed.
 
@@ -369,7 +373,7 @@ ShardClient::CommitCallback(const string &request_str, void* &reply_str)
 
 /* Callback from a shard replica on abort operation completion. */
 void
-ShardClient::AbortCallback(const string &request_str, void* &reply_str)
+ShardClient::AbortCallback(const string &request_str, const void* reply_str)
 {
     // ABORTs always succeed.
 

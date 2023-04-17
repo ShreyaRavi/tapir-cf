@@ -37,6 +37,8 @@
 #include "replication/ir/client.h"
 #include "replication/ir/ir-proto.pb.h"
 
+#include "tapir_serialized_cpp.h"
+
 #include <math.h>
 namespace replication {
 namespace ir {
@@ -257,7 +259,7 @@ void IRClient::HandleSlowPathConsensus(
 
                 // All messages should have the same view.
                 if (view == 0) {
-                    view = msg.view();
+                    view = msg->view();
                 }
                 ASSERT(msg.view() == view);
             }
@@ -596,11 +598,11 @@ IRClient::HandleConsensusReply(const TransportAddress &remote,
             return;
         }
 
-        req->consensusReplyQuorum.Add(view, replicaIdx, msg);
+        req->consensusReplyQuorum.Add(view, replicaIdx, msg_ptr);
         const std::map<int, void*> &msgs =
             req->consensusReplyQuorum.GetMessages(view);
 
-        if (msg->finalized()) {
+        if (false) {
             // ignore. code path doesn't go here.
         } else if (req->on_slow_path && msgs.size() >= req->quorumSize) {
             HandleSlowPathConsensus(reqId, msgs, false, req);
@@ -755,7 +757,7 @@ IRClient::HandleUnloggedReply(const TransportAddress &remote,
 {
     if (useCornflakes) {
         uint64_t reqId;
-        UnloggedReplyMessage_get_clientreqid(msg_ptr, &clientreqid);
+        UnloggedReplyMessage_get_clientreqid(msg_ptr, &reqId);
     
         void* reply;
         UnloggedReplyMessage_get_mut_reply(msg_ptr, &reply);

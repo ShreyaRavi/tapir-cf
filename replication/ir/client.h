@@ -128,7 +128,7 @@ protected:
     };
 
     struct PendingConsensusRequest : public PendingRequest {
-        QuorumSet<opnum_t, proto::ReplyConsensusMessage> consensusReplyQuorum;
+        QuorumSet<opnum_t, void*> consensusReplyQuorum;
         decide_t decide;
         Reply decideResult;
         const std::size_t quorumSize;
@@ -195,7 +195,7 @@ protected:
     // a consensus request.
     void HandleSlowPathConsensus(
         const uint64_t reqid,
-        const std::map<int, proto::ReplyConsensusMessage> &msgs,
+        const std::map<int, void*> &msgs,
         const bool finalized_result_found,
         PendingConsensusRequest *req);
 
@@ -209,7 +209,7 @@ protected:
     // user.
     void HandleFastPathConsensus(
         const uint64_t reqid,
-        const std::map<int, proto::ReplyConsensusMessage> &msgs,
+        const std::map<int, void*> &msgs,
         PendingConsensusRequest *req);
 
     void ResendConfirmation(const uint64_t reqId, bool isConsensus);
