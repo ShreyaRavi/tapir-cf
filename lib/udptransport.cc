@@ -543,12 +543,6 @@ UDPTransport::Stop()
 static void
 DecodePacket(const char *buf, size_t sz, string &type, void* &msg, std::unordered_map<uint32_t, MessageType>& respTypeMap, void* arena, bool useCornflakes)
 {
-    printf("Decode packet of size: %lu.\n", sz);
-    printf("[");
-    for (size_t i = 0; i < sz; i++) {
-        printf("%u, ", (unsigned int) buf[i]);
-    }
-    printf("]\n");
     const char *ptr = buf;
     // first 4 bytes: msg id
     uint32_t msgId = *((uint32_t *)ptr);
@@ -566,167 +560,24 @@ DecodePacket(const char *buf, size_t sz, string &type, void* &msg, std::unordere
             ReplyInconsistentMessage_new_in(arena, &reply);
             // do not include msg id in size bc ptr is incremented past the msg id
             ReplyInconsistentMessage_deserialize(reply, ptr, sz - sizeof(uint32_t), 0, arena);
-            /*
-            uint64_t view;
-            ReplyInconsistentMessage_get_view(reply, &view);
-            uint32_t replicaIdx;
-            ReplyInconsistentMessage_get_replicaIdx(reply, &replicaIdx);
-            uint32_t finalized;
-            ReplyInconsistentMessage_get_finalized(reply, &finalized);
-            
-            void* opid;
-            ReplyInconsistentMessage_get_mut_opid(reply, &opid);
-            
-            uint64_t clientid;
-            OpID_get_clientid(opid, &clientid);
-
-            uint64_t clientreqid;
-            OpID_get_clientreqid(opid, &clientreqid);
-
-            replication::ir::proto::ReplyInconsistentMessage replyProto;
-            replyProto.set_view(view);
-            replyProto.set_replicaidx(replicaIdx);
-            replyProto.mutable_opid()->set_clientid(clientid);
-            replyProto.mutable_opid()->set_clientreqid(clientreqid);
-            replyProto.set_finalized(finalized);
-            // maybe construct the protobuf and serialize it to string and set that to msg.
-            */
             type = "replication.ir.proto.ReplyInconsistentMessage";
             msg = reply;
         } else if (respType == CONFIRM_MESSAGE) {
             ConfirmMessage_new_in(arena, &reply);
             // do not include msg id in size bc ptr is incremented past the msg id
             ConfirmMessage_deserialize(reply, ptr, sz - sizeof(uint32_t), 0, arena);
-            /*
-            uint64_t view;
-            ConfirmMessage_get_view(reply, &view);
-            uint32_t replicaIdx;
-            ConfirmMessage_get_replicaIdx(reply, &replicaIdx);
-            
-            void* opid;
-            ConfirmMessage_get_mut_opid(reply, &opid);
-            
-            uint64_t clientid;
-            OpID_get_clientid(opid, &clientid);
-            uint64_t clientreqid;
-            OpID_get_clientreqid(opid, &clientreqid);
-
-            replication::ir::proto::ConfirmMessage replyProto;
-            replyProto.set_view(view);
-            replyProto.set_replicaidx(replicaIdx);
-            replyProto.mutable_opid()->set_clientid(clientid);
-            replyProto.mutable_opid()->set_clientreqid(clientreqid);
-            // maybe construct the protobuf and serialize it to string and set that to msg.
-            */
             type = "replication.ir.proto.ConfirmMessage";
             msg = reply;
         } else if (respType == REPLY_CONSENSUS_MESSAGE) {
             ReplyConsensusMessage_new_in(arena, &reply);
             // do not include msg id in size bc ptr is incremented past the msg id
             ReplyConsensusMessage_deserialize(reply, ptr, sz - sizeof(uint32_t), 0, arena);
-            /*
-            uint64_t view;
-            ReplyConsensusMessage_get_view(reply, &view);
-            uint32_t replicaIdx;
-            ReplyConsensusMessage_get_replicaIdx(reply, &replicaIdx);
-
-            void* result;
-            ReplyConsensusMessage_get_mut_result(reply, &result);
-            
-            void* tapirReply;
-            Reply_get_mut_result(result, &tapirReply);
-
-            int32_t status;
-            TapirReply_get_status(tapirReply, &status);
-
-            void* cfValue;
-            TapirReply_get_value(tapirReply, &cfValue);
-            const unsigned char* replyValue;
-            uintptr_t replyLen;
-            CFString_unpack(cfValue, &replyValue, &replyLen);
-
-            void* timestamp;
-            TapirReply_get_mut_timestamp(tapirReply, &timestamp);
-            
-            uint64_t timestampId;
-            TimestampMessage_get_id(timestamp, &timestampId);
-            uint64_t timestampVal;
-            TimestampMessage_get_timestamp(timestamp, &timestampVal);
-
-            uint32_t finalized;
-            ReplyConsensusMessage_get_finalized(reply, &finalized);
-            void* opid;
-            ReplyConsensusMessage_get_mut_opid(reply, &opid);
-            
-            uint64_t clientid;
-            OpID_get_clientid(opid, &clientid);
-            uint64_t clientreqid;
-            OpID_get_clientreqid(opid, &clientreqid);
-
-            replication::ir::proto::ReplyConsensusMessage replyProto;
-            replyProto.set_view(view);
-            replyProto.set_replicaidx(replicaIdx);
-            replyProto.mutable_opid()->set_clientid(clientid);
-            replyProto.mutable_opid()->set_clientreqid(clientreqid);
-
-            tapirstore::proto::TapirReply tapirReplyProto;
-            tapirReplyProto.set_status(status);
-            tapirReplyProto.set_value((const char*) replyValue, replyLen);
-            tapirReplyProto.mutable_timestamp()->set_id(timestampId);
-            tapirReplyProto.mutable_timestamp()->set_timestamp(timestampVal);
-            *replyProto.mutable_result()->mutable_result() = tapirReplyProto;
-            replyProto.set_finalized(finalized);
-            // maybe construct the protobuf and serialize it to string and set that to msg.
-            */
             type = "replication.ir.proto.ReplyConsensusMessage";
             msg = reply;
         } else if (respType == UNLOGGED_REPLY_MESSAGE) {
             UnloggedReplyMessage_new_in(arena, &reply);
             // do not include msg id in size bc ptr is incremented past the msg id
             UnloggedReplyMessage_deserialize(reply, ptr, sz - sizeof(uint32_t), 0, arena);
-            
-            /*
-            uint64_t clientreqid;
-            UnloggedReplyMessage_get_clientreqid(reply, &clientreqid);
-        
-            void* result;
-            UnloggedReplyMessage_get_mut_reply(reply, &result);
-            
-            void* tapirReply;
-            Reply_get_mut_result(result, &tapirReply);
-
-            int32_t status;
-            TapirReply_get_status(tapirReply, &status);
-
-            void* cfValue;
-            TapirReply_get_value(tapirReply, &cfValue);
-            const unsigned char* replyValue;
-            uintptr_t replyLen;
-            CFString_unpack(cfValue, &replyValue, &replyLen);
-            // printf("unlogged reply message value len: %lu\n",replyLen );
-            string replyStr((char*)replyValue, replyLen);
-            // printf("value in unlogged reply message tapir reply: %s\n", replyStr.c_str());
-
-            void* timestamp;
-            TapirReply_get_mut_timestamp(tapirReply, &timestamp);
-            
-            uint64_t timestampId;
-            TimestampMessage_get_id(timestamp, &timestampId);
-            uint64_t timestampVal;
-            TimestampMessage_get_timestamp(timestamp, &timestampVal);
-
-            replication::ir::proto::UnloggedReplyMessage replyProto;
-            replyProto.set_clientreqid(clientreqid);
-            
-            tapirstore::proto::TapirReply tapirReplyProto;
-            tapirReplyProto.set_status(status);
-            tapirReplyProto.set_value((const char*) replyValue, replyLen);
-            tapirReplyProto.mutable_timestamp()->set_id(timestampId);
-            tapirReplyProto.mutable_timestamp()->set_timestamp(timestampVal);
-            *replyProto.mutable_reply()->mutable_result() = tapirReplyProto;
-            // maybe construct the protobuf and serialize it to string and set that to msg.
-            */
-            
             type = "replication.ir.proto.UnloggedReplyMessage";
             msg = reply;
         } else {
