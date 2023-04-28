@@ -242,7 +242,18 @@ CFTransport::SendCFMessageInternal(TransportReceiver *src,
             Mlx5Connection_ConfirmMessage_queue_cornflakes_arena_object(connection, msg_id, conn_id, m, true);
             break;
         case UNLOGGED_REPLY_MESSAGE:
-            //printf("serializing UnloggedReplyMessage\n");  
+            //printf("serializing UnloggedReplyMessage\n"); 
+            /*
+            void* reply;
+            UnloggedReplyMessage_get_mut_reply(m, &reply);
+            void* result;
+            Reply_get_mut_result(reply, &result);
+            void* cfstring_value;
+            TapirReply_get_value(result, &cfstring_value);
+            uint16_t refcnt;
+            CFString_refcnt(cfstring_value, &refcnt);
+            printf("UnloggedReply value refcnt (should be 2? 3?): %u\n", refcnt); 
+            */
             Mlx5Connection_UnloggedReplyMessage_queue_cornflakes_arena_object(connection, msg_id, conn_id, m, true);
             break;
         default:

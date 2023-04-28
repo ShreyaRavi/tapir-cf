@@ -138,22 +138,28 @@ Server::UnloggedUpcall(const string &str1, void* reply)
                 status = store->Get(request.txnid(), request.get().key(),
                                 request.get().timestamp(), val);
                 if (status == 0) {
-		    string getValue((char*)val.second.zeroCopyString.ptr, val.second.zeroCopyString.len);
-		    //printf("servicing get with key: %s, value: %s\n", request.get().key().c_str(), getValue.c_str());
+                    //printf("before setting the zero copy value ino the get reply cf struct\n");
+                    //Mlx5Connection_get_mbuf_refcnt(val.second.zeroCopyString.smart_ptr);  
                     void* cfString;
-
                     CFString_new(val.second.zeroCopyString.ptr, val.second.zeroCopyString.len, connection, arena, &cfString);
                     TapirReply_set_value(tapirReply, cfString);
+                    //printf("after setting zero copy value into get reply cf struct\n");
+                    //Mlx5Connection_get_mbuf_refcnt(val.second.zeroCopyString.smart_ptr);
                 }
             } else {
                 pair<Timestamp, VersionedKVStore::KVStoreValue> val;
                 status = store->Get(request.txnid(), request.get().key(), val);
                 
 		if (status == 0) {
+                    //printf("before setting the zero copy value ino the get reply cf struct\n");
+                    //Mlx5Connection_get_mbuf_refcnt(val.second.zeroCopyString.smart_ptr);  
                     void* cfString;
                     CFString_new(val.second.zeroCopyString.ptr, val.second.zeroCopyString.len, connection, arena, &cfString);
                     TapirReply_set_value(tapirReply, cfString);
-		    string getValue((char*) val.second.zeroCopyString.ptr, val.second.zeroCopyString.len);
+                    //printf("after setting zero copy value into get reply cf struct\n");
+                    //Mlx5Connection_get_mbuf_refcnt(val.second.zeroCopyString.smart_ptr);
+ 
+		    //string getValue((char*) val.second.zeroCopyString.ptr, val.second.zeroCopyString.len);
 		    //printf("servicing get with key: %s, value: %s\n", request.get().key().c_str(), getValue.c_str());
                     void* timestamp;
                     TapirReply_get_mut_timestamp(tapirReply, &timestamp);
@@ -161,6 +167,13 @@ Server::UnloggedUpcall(const string &str1, void* reply)
                 }
             }
             TapirReply_set_status(tapirReply, status);
+            /*
+            void* cfstring_value;
+            TapirReply_get_value(tapirReply, &cfstring_value);
+            uint16_t refcnt;
+            CFString_refcnt(cfstring_value, &refcnt);
+            printf("after setting zero copy value, read refcnt (should be 2): %u\n", refcnt);  
+            */
             break;
         } else {
             replication::Reply* replicationReply = (replication::Reply*) reply;

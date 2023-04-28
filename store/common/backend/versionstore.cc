@@ -63,6 +63,7 @@ VersionedKVStore::getValue(const string &key, const Timestamp &t, set<VersionedK
 bool
 VersionedKVStore::get(const string &key, pair<Timestamp, KVStoreValue> &value)
 {
+    //printf("get with key: %s\n", key.c_str()); 
     // check for existence of key in store
     if (inStore(key)) {
         VersionedValue v = *(store[key].rbegin());
@@ -77,6 +78,7 @@ VersionedKVStore::get(const string &key, pair<Timestamp, KVStoreValue> &value)
 bool
 VersionedKVStore::get(const string &key, const Timestamp &t, pair<Timestamp, KVStoreValue> &value)
 {
+    //printf("get with key: %s\n", key.c_str());
     if (inStore(key)) {
         set<VersionedValue>::iterator it;
         getValue(key, t, it);
@@ -111,6 +113,7 @@ VersionedKVStore::getRange(const string &key, const Timestamp &t,
 void
 VersionedKVStore::put(const string &key, const KVStoreValue &value, const Timestamp &t)
 {
+    //printf("put with key: %s\n", key.c_str());
     set<VersionedValue>::iterator it;
     getValue(key, t, it);
     if (it != store[key].end()) {
