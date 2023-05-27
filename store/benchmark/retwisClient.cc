@@ -10,7 +10,7 @@
 #include "store/common/frontend/client.h"
 #include "store/tapirstore/client.h"
 #include <algorithm>
-
+#include <queue>
 using namespace std;
 
 // Function to pick a random key according to some distribution.
@@ -201,6 +201,8 @@ main(int argc, char **argv)
     bool status;
     vector<int> keyIdx;
 
+    queue<int> ids;
+
     gettimeofday(&t0, NULL);
     srand(t0.tv_sec + t0.tv_usec);
 
@@ -215,6 +217,14 @@ main(int argc, char **argv)
 
         // Decide which type of retwis transaction it is going to be.
         ttype = rand() % 100;
+
+        if (ttype < 100) {
+            keyIdx.push_back(rand_key());
+            uint64_t id = client->Get(keys[keyIdx[0]]);
+            ids.push(id);
+            // return an index corresponding to the request id
+            // then when the client gets a reply with that id, we know the transaction has finished.
+        }
 
         if (ttype < 5) {
             // 5% - Add user transaction. 1,3
@@ -306,6 +316,10 @@ main(int argc, char **argv)
             printf("number of completed transactions: %d\n", nTransactions);
             break;
         } 
+    }
+
+    while (queue.size() > 0) {
+        // pop every queue entry and see what's completed.
     }
 
     fprintf(stderr, "# Client exiting..\n");

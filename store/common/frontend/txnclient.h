@@ -74,6 +74,12 @@ public:
                      const Timestamp &timestamp,
                      Promise *promise = NULL) = 0;
 
+    void Get(uint64_t id,
+            const std::string &key,
+            uint64_t command_id);
+    
+    int GetStatus(const command_id, std::string& value);
+
     // Set the value for the given key.
     virtual void Put(uint64_t id,
                      const std::string &key,

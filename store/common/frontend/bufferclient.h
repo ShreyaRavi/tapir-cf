@@ -36,6 +36,7 @@
 #include "store/common/promise.h"
 #include "store/common/transaction.h"
 #include "store/common/frontend/txnclient.h"
+#include <unordered_map>
 
 class BufferClient
 {
@@ -48,6 +49,10 @@ public:
 
     // Get value corresponding to key.
     void Get(const string &key, Promise *promise = NULL);
+
+    void Get(const string &key, uint64_t command_id);
+
+    string GetStatus(const uint64_t commandID);
 
     // Put value for given key.
     void Put(const string &key, const string &value, Promise *promise = NULL);
@@ -70,6 +75,9 @@ private:
 
     // Unique transaction id to keep track of ongoing transaction.
     uint64_t tid;
+
+    std::unordered_map<uint64_t, std::string> responses;
+    
 };
 
 #endif /* _BUFFER_CLIENT_H_ */

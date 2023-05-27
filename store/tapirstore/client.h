@@ -60,12 +60,21 @@ public:
     int Get(const std::string &key, std::string &value);
     // Interface added for Java bindings
     std::string Get(const std::string &key);
+    
+    // new functions
+    uint64_t Get(const std::string &key); // returns request id that can be used later
+    int GetStatus(const command_id, string& value);
+   
     int Put(const std::string &key, const std::string &value);
     bool Commit();
     void Abort();
     std::vector<int> Stats();
 
 private:
+
+    uint64_t command_id;
+    // set of request ids so that we can count how many successful GETs/PUTs/transactions we had
+
     // Unique ID for this client.
     uint64_t client_id;
 

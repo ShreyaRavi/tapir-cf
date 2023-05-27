@@ -48,6 +48,7 @@ Client::Client(const string configPath, int nShards,
         client_id = dis(gen);
     }
     t_id = (client_id/10000)*10000;
+    command_id = 0;
 
     bclient.reserve(nshards);
 
@@ -120,6 +121,28 @@ Client::Get(const string &key, string &value)
     value = promise.GetValue();
     //printf("get path value: %s\n", value.c_str());
     return promise.GetReply();
+}
+
+uint64_t
+Client::Get(const string &key)
+{
+    // Contact the appropriate shard to get the value.
+    int i = key_to_shard(key, nshards);
+
+    // If needed, add this shard to set of participants and send BEGIN.
+    if (participants.find(i) == participants.end()) {
+        participants.insert(i);
+        bclient[i]->Begin(t_id);
+    }
+    command_id++;
+    bclient[i]->Get(key, command_id);
+    return command_id;
+}
+
+int
+Client::GetStatus(const command_id, string& value)
+{
+    return bclient[i]->GetStatus(command_id, value);
 }
 
 string
