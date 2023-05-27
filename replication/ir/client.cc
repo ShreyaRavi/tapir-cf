@@ -170,16 +170,16 @@ IRClient::InvokeUnlogged(int replicaIdx,
                          uint32_t timeout)
 {
     uint64_t reqId = ++lastReqId;
-    auto timer = std::unique_ptr<Timeout>(new Timeout(
-        transport, timeout,
-        [this, reqId]() { UnloggedRequestTimeoutCallback(reqId); }));
+   // auto timer = std::unique_ptr<Timeout>(new Timeout(
+   //     transport, timeout,
+   //     [this, reqId]() { UnloggedRequestTimeoutCallback(reqId); }));
 
     PendingUnloggedRequest *req =
 	new PendingUnloggedRequest(request,
 				   reqId,
 				   continuation,
 				   error_continuation,
-				   std::move(timer));
+				   nullptr);
 
     proto::UnloggedRequestMessage reqMsg;
     reqMsg.mutable_req()->set_op(request);
@@ -187,7 +187,7 @@ IRClient::InvokeUnlogged(int replicaIdx,
     reqMsg.mutable_req()->set_clientreqid(reqId);
 
     if (transport->SendMessageToReplica(this, replicaIdx, reqMsg)) {
-	req->timer->Start();
+	//req->timer->Start();
 	pendingReqs[reqId] = req;
     } else {
         Warning("Could not send unlogged request to replica");
@@ -240,6 +240,7 @@ void IRClient::HandleSlowPathConsensus(
     const bool finalized_result_found,
     PendingConsensusRequest *req)
 {
+    printf("in HandleSlowPathConsensus\n");
     ASSERT(finalized_result_found || msgs.size() >= req->quorumSize);
     Debug("Handling slow path for request %lu.", reqid);
 
@@ -349,9 +350,9 @@ void IRClient::HandleFastPathConsensus(
             reqid);
 
         Reply reply;
-        reply.mutable_result()->set_status(get<0>(result.first));
-        reply.mutable_result()->mutable_timestamp()->set_id(get<1>(result.first));
-        reply.mutable_result()->mutable_timestamp()->set_timestamp(get<2>(result.first));
+        reply.mutable_result()->set_status(0);
+        reply.mutable_result()->mutable_timestamp()->set_id(0);
+        reply.mutable_result()->mutable_timestamp()->set_timestamp(0);
 
         req->decideResult = reply;
 
@@ -501,6 +502,7 @@ IRClient::HandleInconsistentReply(const TransportAddress &remote,
         // Record replies
         viewstamp_t vs = { view, reqId };
         if (req->inconsistentReplyQuorum.AddAndCheckForQuorum(vs, replicaIdx, msg_ptr)) {
+            // this happens once per PUT (commit phase)
 
             // If all quorum received, then send finalize and return to client
             // Return to client
@@ -687,7 +689,9 @@ IRClient::HandleConfirm(const TransportAddress &remote,
         if (req->confirmQuorum.AddAndCheckForQuorum(vs, replicaIdx, msg_ptr)) {
             req->timer->Stop();
             pendingReqs.erase(it);
+            /*
             if (!req->continuationInvoked) {
+                printf("confirm quorum found but continuation was not invoked\n");
                 PendingConsensusRequest *r2 =
                     dynamic_cast<PendingConsensusRequest *>(req);
                 ASSERT(r2 != nullptr);
@@ -705,6 +709,7 @@ IRClient::HandleConfirm(const TransportAddress &remote,
                     }
                 }
             }
+            */
             delete req;
         }
     } else {
@@ -770,7 +775,7 @@ IRClient::HandleUnloggedReply(const TransportAddress &remote,
 
         PendingRequest *req = it->second;
         // delete timer event
-        req->timer->Stop();
+        // req->timer->Stop();
         // remove from pending list
         pendingReqs.erase(it);
         // invoke application callback
