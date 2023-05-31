@@ -101,7 +101,7 @@ CFTransport::LookupAddress(const transport::Configuration &config,
 }
 
 CFTransport::CFTransport(void* mlx5Connection, void* bumpArena)
-    : connection(mlx5Connection), arena(bumpArena), stopLoop(false)
+    : connection(mlx5Connection), arena(bumpArena), stopLoop(false), responseCount(0)
 {
     
 }
@@ -254,6 +254,8 @@ CFTransport::SendCFMessageInternal(TransportReceiver *src,
             CFString_refcnt(cfstring_value, &refcnt);
             printf("UnloggedReply value refcnt (should be 2? 3?): %u\n", refcnt); 
             */
+            responseCount++;
+            printf("response count: %lu\n", responseCount);
             Mlx5Connection_UnloggedReplyMessage_queue_cornflakes_arena_object(connection, msg_id, conn_id, m, true);
             break;
         default:

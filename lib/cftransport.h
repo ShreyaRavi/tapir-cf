@@ -81,6 +81,7 @@ private:
     void* connection;
     void* arena;
     bool stopLoop;
+    uint64_t responseCount;
 
     TransportReceiver* receiver;
     
