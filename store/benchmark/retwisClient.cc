@@ -221,12 +221,15 @@ main(int argc, char **argv)
         if (ttype < 100) {
             keyIdx.push_back(rand_key());
             uint64_t id = client->GetWithID(keys[keyIdx[0]]);
+            //printf("get request sent with command id %lu\n", id);
+            //string value;
+            //int get_status = client->GetStatus(id, value);
+            //printf("get status: %d for command id %lu\n", get_status, id);
+            //if (get_status > 0) printf("get result: %s\n", value.c_str());
             ids.push(id);
             // return an index corresponding to the request id
             // then when the client gets a reply with that id, we know the transaction has finished.
-        }
-
-        if (ttype < 5) {
+        } else if (ttype < 5) {
             // 5% - Add user transaction. 1,3
             keyIdx.push_back(rand_key());
             keyIdx.push_back(rand_key());
@@ -294,7 +297,7 @@ main(int argc, char **argv)
         }
 
         if (status) {
-            status = client->Commit();
+            // status = client->Commit();
         } else {
             Debug("Aborting transaction due to failed Read");
         }
@@ -318,9 +321,18 @@ main(int argc, char **argv)
         } 
     }
 
+    uint64_t successfulGets = 0;
     while (ids.size() > 0) {
         // pop every queue entry and see what's completed.
+        uint64_t command_id = ids.front();
+        string value;
+        if (client->GetStatus(command_id, value) > 0) {
+            successfulGets++;
+            printf("cmd_id: %lu, value: %s\n", command_id, value.c_str());
+        }
+        ids.pop();
     }
+    printf("successful gets: %lu\n", successfulGets);
 
     fprintf(stderr, "# Client exiting..\n");
     return 0;
