@@ -55,6 +55,7 @@
 
 const size_t MAX_UDP_MESSAGE_SIZE = 9000; // XXX
 const int SOCKET_BUF_SIZE = 10485760;
+static uint64_t respCount;
 
 using std::pair;
 
@@ -187,7 +188,7 @@ UDPTransport::UDPTransport(double dropRate, double reorderRate,
         int dscp, bool handleSignals, bool useCornflakes)
     : dropRate(dropRate), reorderRate(reorderRate), dscp(dscp), useCornflakes(useCornflakes)
 {
-
+    respCount = 0;
     arena = Bump_with_capacity(
         32,   // batch_size
         1024, // max_packet_size
@@ -576,8 +577,9 @@ DecodePacket(const char *buf, size_t sz, string &type, void* &msg, std::unordere
             msg = reply;
         } else if (respType == UNLOGGED_REPLY_MESSAGE) {
             UnloggedReplyMessage_new_in(arena, &reply);
-            // do not include msg id in size bc ptr is incremented past the msg id
+            // do not include msg id in size bc ptr is incremented past the msg id 
             UnloggedReplyMessage_deserialize(reply, ptr, sz - sizeof(uint32_t), 0, arena);
+            printf("get response count: %lu\n", respCount);
             type = "replication.ir.proto.UnloggedReplyMessage";
             msg = reply;
         } else {
@@ -640,6 +642,7 @@ UDPTransport::OnReadable(int fd)
         size_t typeLen = *((size_t *)buf);
         if (typeLen != 0) {
             // Not a fragment. Decode the packet
+            respCount++;
             DecodePacket(buf, sz, msgType, msg, msgRespType, arena, useCornflakes);
         } else {
             printf("have to deal with fragments.\n");

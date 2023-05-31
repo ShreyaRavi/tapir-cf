@@ -363,6 +363,7 @@ ShardClient::GetCallback(const uint64_t command_id, const string &request_str, c
 
         // set status for the req id
         finishedGets[command_id] = replyStr;
+        printf("Received get response for command id: %lu\n", command_id);
 
         if (waiting != NULL) {
             Promise *w = waiting;
