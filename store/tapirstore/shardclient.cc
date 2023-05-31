@@ -88,6 +88,7 @@ ShardClient::Get(uint64_t id, const string &key, Promise *promise)
     // Send the GET operation to appropriate shard.
     Debug("[shard %i] Sending GET [%lu : %s]", shard, id, key.c_str());
 
+    /*
     // create request
     string request_str;
     TapirRequest request;
@@ -111,6 +112,7 @@ ShardClient::Get(uint64_t id, const string &key, Promise *promise)
                                     this),
                                timeout); // timeout in ms
     });
+    */
 }
 
 void
@@ -128,7 +130,7 @@ ShardClient::Get(uint64_t id, const string &key, uint64_t command_id)
     request.SerializeToString(&request_str);
 
     // set to 1 second by default
-    int timeout = (promise != NULL) ? promise->GetTimeout() : 1000;
+    int timeout = 1000;
 
     transport->Timer(0, [=]() {
         client->InvokeUnlogged(replica,
@@ -152,6 +154,7 @@ ShardClient::Get(uint64_t id, const string &key,
     // Send the GET operation to appropriate shard.
     Debug("[shard %i] Sending GET [%lu : %s]", shard, id, key.c_str());
 
+    /*
     // create request
     string request_str;
     TapirRequest request;
@@ -175,6 +178,7 @@ ShardClient::Get(uint64_t id, const string &key,
             bind(&ShardClient::GetTimeout, this),
             timeout); // timeout in ms
     });
+    */
 }
 
 void
@@ -316,18 +320,19 @@ ShardClient::GetTimeout()
 }
 
 int
-ShardClient::GetStatus(const command_id, string& value)
+ShardClient::GetStatus(const uint64_t command_id, string& value)
 {
     if (finishedGets.find(command_id) != finishedGets.end()) {
         value = finishedGets[command_id];
+        finishedGets.erase(command_id);
         return 1;
     }
-    return 0;
+    return -1;
 }
 
 /* Callback from a shard replica on get operation completion. */
 void
-ShardClient::GetCallback(const command_id, const string &request_str, const void* replication_reply)
+ShardClient::GetCallback(const uint64_t command_id, const string &request_str, const void* replication_reply)
 {
     /* Replies back from a shard. */
 
@@ -384,10 +389,11 @@ ShardClient::GetCallback(const command_id, const string &request_str, const void
 }
 
 /* Callback from a shard replica on get operation completion. */
+/*
 void
 ShardClient::GetCallback(const string &request_str, const void* replication_reply)
 {
-    /* Replies back from a shard. */
+    // Replies back from a shard.
 
     // this is where we should unpack the value from the cf struct
 
@@ -437,6 +443,7 @@ ShardClient::GetCallback(const string &request_str, const void* replication_repl
     }
     
 }
+*/
 
 /* Callback from a shard replica on prepare operation completion. */
 void

@@ -39,8 +39,9 @@ public:
     // Returns statistics (vector of integers) about most recent transaction.
     virtual std::vector<int> Stats() = 0;
 
-    uint64_t Get(const std::string &key); // returns request id that can be used later
-    std::string GetStatus(const command_id);
+    virtual uint64_t GetWithID(const std::string &key) = 0; // returns request id that can be used later
+    
+    virtual int GetStatus(const uint64_t command_id, std::string &value) = 0;
 
     // Sharding logic: Given key, generates a number b/w 0 to nshards-1
     uint64_t key_to_shard(const std::string &key, uint64_t nshards) {

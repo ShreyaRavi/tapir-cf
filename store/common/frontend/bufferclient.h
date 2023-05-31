@@ -52,7 +52,7 @@ public:
 
     void Get(const string &key, uint64_t command_id);
 
-    string GetStatus(const uint64_t commandID);
+    int GetStatus(const uint64_t commandID, string &value);
 
     // Put value for given key.
     void Put(const string &key, const string &value, Promise *promise = NULL);

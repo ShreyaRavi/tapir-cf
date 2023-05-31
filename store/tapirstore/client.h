@@ -62,8 +62,8 @@ public:
     std::string Get(const std::string &key);
     
     // new functions
-    uint64_t Get(const std::string &key); // returns request id that can be used later
-    int GetStatus(const command_id, string& value);
+    uint64_t GetWithID(const std::string &key); // returns request id that can be used later
+    int GetStatus(const uint64_t command_id, std::string& value);
    
     int Put(const std::string &key, const std::string &value);
     bool Commit();

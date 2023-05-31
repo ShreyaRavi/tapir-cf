@@ -124,7 +124,7 @@ Client::Get(const string &key, string &value)
 }
 
 uint64_t
-Client::Get(const string &key)
+Client::GetWithID(const string &key)
 {
     // Contact the appropriate shard to get the value.
     int i = key_to_shard(key, nshards);
@@ -140,9 +140,16 @@ Client::Get(const string &key)
 }
 
 int
-Client::GetStatus(const command_id, string& value)
+Client::GetStatus(const uint64_t command_id, string& value)
 {
-    return bclient[i]->GetStatus(command_id, value);
+    for (uint64_t i = 0; i < nshards; i++) {
+        
+        int success = bclient[i]->GetStatus(command_id, value);
+        if (success > 0) {
+            return success;
+        }
+    }
+    return -1;
 }
 
 string

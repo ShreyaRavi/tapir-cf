@@ -8,4 +8,4 @@ $(d)benchClient: $(OBJS-all-clients) $(o)benchClient.o
 
 $(d)retwisClient: $(OBJS-all-clients) $(o)retwisClient.o
 
-BINS += $(d)benchClient $(d)retwisClient
+BINS += $(d)retwisClient

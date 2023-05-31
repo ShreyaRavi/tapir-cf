@@ -220,7 +220,7 @@ main(int argc, char **argv)
 
         if (ttype < 100) {
             keyIdx.push_back(rand_key());
-            uint64_t id = client->Get(keys[keyIdx[0]]);
+            uint64_t id = client->GetWithID(keys[keyIdx[0]]);
             ids.push(id);
             // return an index corresponding to the request id
             // then when the client gets a reply with that id, we know the transaction has finished.
@@ -318,7 +318,7 @@ main(int argc, char **argv)
         } 
     }
 
-    while (queue.size() > 0) {
+    while (ids.size() > 0) {
         // pop every queue entry and see what's completed.
     }
 

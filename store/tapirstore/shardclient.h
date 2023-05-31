@@ -71,7 +71,7 @@ public:
             const std::string &key,
             const Timestamp &timestamp,
             Promise *promise = NULL);
-    int GetStatus(const command_id, std::string& value);
+    int GetStatus(const uint64_t command_id, std::string& value);
     void Put(uint64_t id,
 	     const std::string &key,
 	     const std::string &value,
@@ -110,7 +110,7 @@ private:
     void GetTimeout();
 
     /* Callbacks for hearing back from a shard for an operation. */
-    void GetCallback(const std::string &, const void*);
+    //void GetCallback(const std::string &, const void*);
     void GetCallback(const uint64_t, const std::string &, const void*);
     void PrepareCallback(const std::string &, const void*);
     void CommitCallback(const std::string &, const void*);

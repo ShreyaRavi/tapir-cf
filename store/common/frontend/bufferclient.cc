@@ -94,7 +94,7 @@ BufferClient::Get(const string &key, const uint64_t command_id)
     if (txn.getReadSet().find(key) != txn.getReadSet().end()) {
         // read from the server at same timestamp.
         // fix this later
-        txnclient->Get(tid, key, (txn.getReadSet().find(key))->second, promise);
+        //txnclient->Get(tid, key, (txn.getReadSet().find(key))->second, promise);
         return;
     }
     
@@ -102,17 +102,22 @@ BufferClient::Get(const string &key, const uint64_t command_id)
     // Promise p(GET_TIMEOUT);
     // Promise *pp = (promise != NULL) ? promise : &p;
 
-    txnclient->Get(tid, key, NULL, command_id);
+    txnclient->Get(tid, key, command_id);
     // if (pp->GetReply() == REPLY_OK) {
     //     Debug("Adding [%s] with ts %lu", key.c_str(), pp->GetTimestamp().getTimestamp());
     //     txn.addReadSet(key, pp->GetTimestamp());
     // }
 }
 
-string
-BufferClient::GetStatus(const uint64_t commandID)
+int
+BufferClient::GetStatus(const uint64_t commandID, string &value)
 {
-    return txnclient->GetStatus(commandID);
+    if (responses.find(commandID) != responses.end()) {
+        value = responses[commandID];
+        responses.erase(commandID);
+        return 1;
+    }
+    return txnclient->GetStatus(commandID, value);
 }
 
 /* Set value for a key. (Always succeeds).
