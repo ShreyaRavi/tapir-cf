@@ -11,6 +11,8 @@
 #include "store/tapirstore/client.h"
 #include <algorithm>
 #include <queue>
+#include <unistd.h>
+
 using namespace std;
 
 // Function to pick a random key according to some distribution.
@@ -226,6 +228,7 @@ main(int argc, char **argv)
             //int get_status = client->GetStatus(id, value);
             //printf("get status: %d for command id %lu\n", get_status, id);
             //if (get_status > 0) printf("get result: %s\n", value.c_str());
+            usleep(10);
             ids.push(id);
             // return an index corresponding to the request id
             // then when the client gets a reply with that id, we know the transaction has finished.
